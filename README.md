@@ -24,14 +24,14 @@
 ---
 
 ## 📁 **Cấu trúc thư mục**
-'''
+```bash
 project/
 ├── frontend/ # Giao diện người dùng (UI/UX)
 ├── backend/ # Xử lý nghiệp vụ và API
 ├── assets/ # Hình ảnh, biểu tượng, tài nguyên tĩnh
 ├── docs/ # Tài liệu thiết kế & báo cáo
 └── README.md # Mô tả dự án
-'''
+```bash
 
 ---
 
