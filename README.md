@@ -15,11 +15,12 @@
 - **Version Control**: Git & GitHub
 
 ## 📁 Cấu trúc thư mục
-  ├── frontend/ # Giao diện người dùng 
-  ├── backend/ # API và xử lý dữ liệu 
-  ├── assets/ # Hình ảnh, biểu tượng, tài nguyên tĩnh 
-  ├── docs/ # Tài liệu thiết kế, báo cáo 
-  └── README.md # Mô tả dự án
+project/
+├── frontend/      # Giao diện người dùng 
+├── backend/       # API và xử lý dữ liệu 
+├── assets/        # Hình ảnh, biểu tượng, tài nguyên tĩnh 
+├── docs/          # Tài liệu thiết kế, báo cáo 
+└── README.md      # Mô tả dự án
 
 Code
 
