@@ -31,8 +31,7 @@ project/
 ├── assets/ # Hình ảnh, biểu tượng, tài nguyên tĩnh
 ├── docs/ # Tài liệu thiết kế & báo cáo
 └── README.md # Mô tả dự án
-```bash
-
+```
 ---
 
 ## 👥 **Thành viên nhóm**
@@ -51,18 +50,17 @@ project/
 
 ## 🚀 **Hướng dẫn chạy dự án**
 
-```bash
-# 1️⃣ Clone repo về máy
+### 1️⃣ Clone repo về máy
 git clone https://github.com/your-username/Born-To-Survive---BTS---WebDev---IS207.Q13.git
 
-# 2️⃣ Di chuyển vào thư mục backend và cài đặt dependencies
+### 2️⃣ Di chuyển vào thư mục backend và cài đặt dependencies
 cd backend
 npm install
 
-# 3️⃣ Khởi chạy server
+### 3️⃣ Khởi chạy server
 npm start
 
-# Mở frontend bằng Live Server hoặc trình duyệt
+### Mở frontend bằng Live Server hoặc trình duyệt
 📌 Ghi chú
 Dự án đang trong quá trình phát triển, có thể thay đổi theo tiến độ.
 
