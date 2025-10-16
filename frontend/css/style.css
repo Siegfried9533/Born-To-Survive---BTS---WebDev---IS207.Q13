@@ -1,0 +1,70 @@
+/* ===================== Global ===================== */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css");
+
+:root {
+    --primary: #4FD1C5;
+    --primary-hover: #38B2AC;
+    --bg: #F8F9FA;
+    --white: #FFFFFF;
+    --muted: #A0AEC0;
+    --dark: #2D3748;
+    --border: #E8EEF2;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ===================== FONT SIZE ===================== */
+.fs-small {
+    font-size: 13px;
+}
+
+/* ===================== LOADING ===================== */
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--white);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    transition: opacity .5s ease;
+}
+
+.spinner {
+    border: 5px solid #eee;
+    border-top: 5px solid var(--primary);
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===================== PAGE FADE ===================== */
+.fade-page {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity .7s ease, transform .7s ease;
+}
+
+.fade-page.loaded {
+    opacity: 1;
+    transform: translateY(0);
+}
