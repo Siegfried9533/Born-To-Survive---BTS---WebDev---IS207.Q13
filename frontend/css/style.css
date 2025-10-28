@@ -5,10 +5,11 @@
 :root {
     --primary: #4FD1C5;
     --primary-hover: #38B2AC;
+    --second-hover: #E2E8F0;
     --bg: #F8F9FA;
-    --white: #FFFFFF;
+    --section: #fafafa;
+    --white: #ffffff;
     --muted: #A0AEC0;
-    --submenu: #E2E8F0;
     --dark: #2D3748;
     --border: #E8EEF2;
 }
@@ -74,13 +75,34 @@ body {
 .sidebar {
     width: 260px;
     height: 100vh;
-    background: var(--white);
+    background: var(--bg);
     padding-top: 20px;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+    /* box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05); */
     position: fixed;
     top: 0;
     left: 0;
     z-index: 10;
+    overflow-y: scroll;
+}
+
+/* Thanh cuộn */
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: var(--bg);
+    border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--primary);
+    border-radius: 10px;
+    border: 1px solid var(--bg);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--primary-hover);
 }
 
 /* Header */
@@ -112,7 +134,7 @@ body {
 }
 
 .menu-item {
-    /* margin-bottom: 10px; */
+    margin-bottom: 10px;
 }
 
 /* Dùng chung cho link thường và link submenu */
@@ -124,12 +146,11 @@ body {
     padding: 14px 15px;
     border-radius: 10px;
     transition: all 0.2s ease;
-    /* font-weight: 500; */
 }
 
 /* hover */
 .menu-item:hover>.menu-link:not(.active) {
-    background-color: var(--bg, #f8f9fa);
+    background-color: var(--second-hover);
     color: var(--dark);
 }
 
@@ -148,7 +169,7 @@ body {
 .menu-icon-bg {
     width: 30px;
     height: 30px;
-    background-color: var(--primary);
+    background-color: var(--white);
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -157,7 +178,7 @@ body {
 }
 
 .menu-icon-bg i {
-    color: var(--white);
+    color: var(--primary);
     font-size: 12px;
 }
 
