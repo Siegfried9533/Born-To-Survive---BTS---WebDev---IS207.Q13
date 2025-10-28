@@ -8,11 +8,8 @@
     --bg: #F8F9FA;
     --white: #FFFFFF;
     --muted: #A0AEC0;
-<<<<<<< HEAD
-    --submenu: #E2E8F0;
-=======
->>>>>>> ntn
-    --dark: #2D3748;
+    <<<<<<< HEAD --submenu: #E2E8F0;
+    =======>>>>>>>ntn --dark: #2D3748;
     --border: #E8EEF2;
 }
 
@@ -206,6 +203,4 @@ body {
 .submenu.show {
     max-height: 500px;
     /* Đặt giá trị đủ lớn để mở (phải lớn hơn chiều cao submenu) */
-=======
->>>>>>> ntn
 }
