@@ -1,5 +1,9 @@
 // =======================================================
+<<<<<<< HEAD
 // 1. Thông báo lỗi chung
+=======
+// Thông báo lỗi chung
+>>>>>>> ntn
 // =======================================================
 
 const ERROR_CLASS = 'dynamic-error-message';
@@ -30,9 +34,13 @@ function isValidEmail(email) {
     return emailRegex.test(email);
 }
 
+<<<<<<< HEAD
 // =======================================================
 // 2. Xử lí loading và effect
 // =======================================================
+=======
+// ===== Loading Effect =====
+>>>>>>> ntn
 window.addEventListener("load", () => {
     const loader = document.getElementById("loading");
     setTimeout(() => {
@@ -42,6 +50,7 @@ window.addEventListener("load", () => {
 });
 
 // Hiệu ứng loading (fade-in khi trang xuất hiện)
+<<<<<<< HEAD
 $(window).on("load", function () {
     window.history.scrollRestoration = "manual";
     $(window).scrollTop(0);
@@ -87,10 +96,40 @@ $(document).ready(function () {
             } else {
                 window.location.href = href;
             }
+=======
+window.addEventListener("load", () => {
+    window.history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+
+    const loading = document.getElementById("loading-screen");
+    const page = document.querySelector(".fade-page");
+
+    setTimeout(() => {
+        loading.style.opacity = "0";
+        setTimeout(() => {
+            loading.style.display = "none";
+            page.classList.add("loaded");
+        }, 600);
+    }, 800);
+});
+
+// Hiệu ứng chuyển trang mượt (fade-out)
+document.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", (e) => {
+        const href = link.getAttribute("href");
+        if (href && !href.startsWith("#")) {
+            e.preventDefault();
+            document.querySelector(".fade-page").classList.remove("loaded");
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                window.location.href = href;
+            }, 500);
+>>>>>>> ntn
         }
     });
 });
 
+<<<<<<< HEAD
 // 3. Load components
 $(document).ready(function () {
     loadComponents();
@@ -155,3 +194,5 @@ $(document).ready(function () {
         }
     }
 });
+=======
+>>>>>>> ntn
