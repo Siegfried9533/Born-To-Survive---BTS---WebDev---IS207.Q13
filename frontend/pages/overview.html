@@ -18,14 +18,35 @@
     <main class="main-content fade-page">
         <header class="dashboard-header">
             <div class="overview-banner p-4">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h2 class="banner-title mb-0">Overview</h2>
-                    <div class="date-range-picker d-flex align-items-center bg-white p-2 rounded-3 fs-small">
-                        <i class="fa-solid fa-calendar-days me-2 text-primary"></i>
-                        <span class="fw-bold">25 July 2020</span>
-                        <span class="mx-2 text-muted">to</span>
-                        <span class="fw-bold">29 July 2020</span>
+                <!-- Top nav -->
+                <div class="top-row d-flex justify-content-between align-items-center">
+                    <h5 class="page-title mb-0 fw-bold">Overview</h5>
+
+                    <div class="nav-icons d-flex align-items-center gap-4">
+                        <i class="fa-solid fa-gear icon-btn"></i>
+                        <div class="notification-icon position-relative">
+                            <i class="fa-solid fa-bell icon-btn"></i>
+                            <span class="badge-dot"></span>
+                        </div>
+                        <img src="/assets/images/avatar.jpg" alt="Avatar" class="nav-avatar">
                     </div>
+                </div>
+                <!-- Date range -->
+                <div class="date-range-picker d-flex align-items-center bg-white rounded-3 fs-small shadow-sm"
+                    id="dateRangePicker">
+
+                    <div class="date-input-group d-flex align-items-center me-2">
+                        <i class="fa-solid fa-calendar-days me-2 text-primary"></i>
+                        <input type="date" id="startDate" class="date-input fw-bold" value="2020-07-25">
+                    </div>
+
+                    <span class="mx-2 fw-bold">To</span>
+
+                    <div class="date-input-group d-flex align-items-center ms-2">
+                        <i class="fa-solid fa-calendar-days me-2 text-primary"></i>
+                        <input type="date" id="endDate" class="date-input fw-bold" value="2020-07-29">
+                    </div>
+
                 </div>
             </div>
         </header>

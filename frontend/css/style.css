@@ -12,6 +12,14 @@
     --muted: #A0AEC0;
     --dark: #2D3748;
     --border: #E8EEF2;
+
+    /* chart & noti */
+    --success: #48BB78;
+    --warning: #F6AD55;
+    --danger: #F56565;
+    --info: #63B3ED;
+    --chart-2: #A0AEC0;
+    --chart-3: #647ACB;
 }
 
 * {
