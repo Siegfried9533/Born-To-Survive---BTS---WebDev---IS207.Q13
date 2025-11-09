@@ -137,76 +137,194 @@ $(function () {
 });
 
 /* ========================== */
-/* SIDEBAR INTERACTIVE LOGIC  */
+/* SIDEBAR INTERACTIVE LOGIC  
 /* ========================== */
+// function initSidebar() {
+//     const sidebar = document.querySelector("#sidebar");
+//     if (!sidebar) return; // Sidebar chưa load
+
+//     const menuItems = sidebar.querySelectorAll(".menu-item");
+//     if (!menuItems.length) return;
+
+//     menuItems.forEach((item) => {
+//         const link = item.querySelector(".menu-link");
+//         if (!link) return;
+
+//         // ===================================
+//         // LOGIC CLICK (Active + Submenu)
+//         // ===================================
+//         link.addEventListener("click", function (e) {
+//             // 1. XÓA active của tất cả menu
+//             // *** LƯU Ý: Phần này cũng xóa style hover inline ***
+//             menuItems.forEach((mi) => {
+//                 mi.classList.remove("active");
+
+//                 // XÓA HOVER INLINE (do mouseenter/leave tạo ra)
+//                 const ml = mi.querySelector(".menu-link");
+//                 if (ml) {
+//                     ml.style.backgroundColor = "";
+//                     ml.style.color = "";
+//                     ml.style.boxShadow = "";
+//                     mi.querySelectorAll(".menu-icon-bg i, .toggle-icon").forEach(
+//                         (icon) => {
+//                             icon.style.color = "";
+//                         }
+//                     );
+//                 }
+//             });
+
+//             // 2. THÊM active cho menu được click
+//             item.classList.add("active");
+//             // Khi 'active' được thêm, style .active từ CSS sẽ tự động áp dụng
+
+//             // 3. XỬ LÝ SUBMENU (nếu có)
+//             if (item.classList.contains("has-submenu")) {
+//                 e.preventDefault();
+
+//                 const submenu = item.querySelector(".submenu");
+
+//                 // ** SỬA LỖI: Dùng class '.show' để khớp với CSS của bạn **
+//                 const isOpen = submenu.classList.contains("show");
+
+//                 // 1. ĐÓNG TẤT CẢ submenu KHÁC
+//                 document.querySelectorAll(".has-submenu .submenu").forEach((s) => {
+//                     if (s !== submenu) s.classList.remove("show");
+//                 });
+//                 document.querySelectorAll(".has-submenu .menu-link").forEach((l) => {
+//                     if (l !== link) l.classList.add("collapsed");
+//                 });
+
+//                 // 2. MỞ/ĐÓNG submenu HIỆN TẠI
+//                 if (!isOpen) {
+//                     link.classList.remove("collapsed");
+//                     submenu.classList.add("show");
+//                 } else {
+//                     link.classList.add("collapsed");
+//                     submenu.classList.remove("show");
+//                 }
+//             }
+//         });
+
+//         // ===================================
+//         // LOGIC HOVER (Giữ theo yêu cầu)
+//         // ===================================
+//         item.addEventListener("mouseenter", function () {
+//             if (!this.classList.contains("active")) {
+//                 const ml = this.querySelector(".menu-link");
+//                 ml.style.backgroundColor = "var(--primary)";
+//                 ml.style.color = "var(--white)";
+//                 ml.style.boxShadow = "0 4px 6px rgba(79, 209, 197, 0.3)";
+//                 this.querySelectorAll(".menu-icon-bg i, .toggle-icon").forEach(
+//                     (icon) => {
+//                         icon.style.color = "var(--white)";
+//                     }
+//                 );
+//             }
+//         });
+
+//         item.addEventListener("mouseleave", function () {
+//             if (!this.classList.contains("active")) {
+//                 const ml = this.querySelector(".menu-link");
+//                 ml.style.backgroundColor = "";
+//                 ml.style.color = "";
+//                 ml.style.boxShadow = "";
+//                 this.querySelectorAll(".menu-icon-bg i, .toggle-icon").forEach(
+//                     (icon) => {
+//                         icon.style.color = "";
+//                     }
+//                 );
+//             }
+//         });
+
+//     });
+// }
+
+/* ======================================================= */
+/* SIDEBAR INTERACTIVE LOGIC (ĐÃ NÂNG CẤP)                 */
+/* ======================================================= */
 function initSidebar() {
     const sidebar = document.querySelector("#sidebar");
-    if (!sidebar) return; // Sidebar chưa load
+    if (!sidebar) return;
 
     const menuItems = sidebar.querySelectorAll(".menu-item");
+    const submenuItems = sidebar.querySelectorAll(".submenu-item"); // <== THÊM MỚI
+
     if (!menuItems.length) return;
 
+    // --- Helper 1: Xóa tất cả style hover/active ---
+    function clearAllActiveStyles() {
+        menuItems.forEach((mi) => {
+            mi.classList.remove("active");
+
+            // Xóa style inline do hover
+            const ml = mi.querySelector(".menu-link");
+            if (ml) {
+                ml.style.backgroundColor = "";
+                ml.style.color = "";
+                ml.style.boxShadow = "";
+                mi.querySelectorAll(".menu-icon-bg i, .toggle-icon").forEach(
+                    (icon) => {
+                        icon.style.color = "";
+                    }
+                );
+            }
+        });
+
+        // Xóa active của submenu item
+        submenuItems.forEach((si) => si.classList.remove("active"));
+    }
+
+    // --- Helper 2: Đóng tất cả submenu ---
+    function closeAllSubmenus() {
+        sidebar.querySelectorAll(".has-submenu .submenu").forEach((s) => {
+            s.classList.remove("show");
+        });
+        sidebar.querySelectorAll(".has-submenu .menu-link").forEach((l) => {
+            l.classList.add("collapsed");
+        });
+    }
+
+    // ===================================
+    // LOGIC CLICK CHO MENU-ITEM (CHA)
+    // ===================================
     menuItems.forEach((item) => {
         const link = item.querySelector(".menu-link");
         if (!link) return;
 
-        // ===================================
-        // LOGIC CLICK (Active + Submenu)
-        // ===================================
         link.addEventListener("click", function (e) {
-            // 1. XÓA active của tất cả menu
-            // *** LƯU Ý: Phần này cũng xóa style hover inline ***
-            menuItems.forEach((mi) => {
-                mi.classList.remove("active");
 
-                // XÓA HOVER INLINE (do mouseenter/leave tạo ra)
-                const ml = mi.querySelector(".menu-link");
-                if (ml) {
-                    ml.style.backgroundColor = "";
-                    ml.style.color = "";
-                    ml.style.boxShadow = "";
-                    mi.querySelectorAll(".menu-icon-bg i, .toggle-icon").forEach(
-                        (icon) => {
-                            icon.style.color = "";
-                        }
-                    );
-                }
-            });
+            // 1. Xóa tất cả active cũ (cả cha và con)
+            clearAllActiveStyles();
 
-            // 2. THÊM active cho menu được click
+            // 2. Thêm active cho menu cha được click
             item.classList.add("active");
-            // Khi 'active' được thêm, style .active từ CSS sẽ tự động áp dụng
 
-            // 3. XỬ LÝ SUBMENU (nếu có)
+            // 3. XỬ LÝ SUBMENU
             if (item.classList.contains("has-submenu")) {
-                e.preventDefault();
-
+                e.preventDefault(); // Ngăn trang nhảy
                 const submenu = item.querySelector(".submenu");
-
-                // ** SỬA LỖI: Dùng class '.show' để khớp với CSS của bạn **
                 const isOpen = submenu.classList.contains("show");
 
-                // 1. ĐÓNG TẤT CẢ submenu KHÁC
-                document.querySelectorAll(".has-submenu .submenu").forEach((s) => {
-                    if (s !== submenu) s.classList.remove("show");
-                });
-                document.querySelectorAll(".has-submenu .menu-link").forEach((l) => {
-                    if (l !== link) l.classList.add("collapsed");
-                });
+                // Đóng tất cả submenu khác
+                closeAllSubmenus();
 
-                // 2. MỞ/ĐÓNG submenu HIỆN TẠI
+                // Mở/Đóng submenu hiện tại
                 if (!isOpen) {
                     link.classList.remove("collapsed");
                     submenu.classList.add("show");
-                } else {
-                    link.classList.add("collapsed");
-                    submenu.classList.remove("show");
                 }
+                // (Nếu đã mở, hàm closeAllSubmenus() ở trên đã lo việc đóng nó)
+
+            } else {
+                // === YÊU CẦU 2: Tự động đóng ===
+                // Nếu click vào menu thường (không có con)
+                // thì đóng tất cả submenu đang mở
+                closeAllSubmenus();
             }
         });
 
         // ===================================
-        // LOGIC HOVER (Giữ theo yêu cầu)
+        // LOGIC HOVER (Giữ nguyên)
         // ===================================
         item.addEventListener("mouseenter", function () {
             if (!this.classList.contains("active")) {
@@ -221,7 +339,6 @@ function initSidebar() {
                 );
             }
         });
-
         item.addEventListener("mouseleave", function () {
             if (!this.classList.contains("active")) {
                 const ml = this.querySelector(".menu-link");
@@ -235,7 +352,27 @@ function initSidebar() {
                 );
             }
         });
+    });
 
+    // ===================================
+    // === YÊU CẦU 1: ACTIVE SUBMENU ITEM ===
+    // ===================================
+    submenuItems.forEach((subItem) => {
+        subItem.addEventListener("click", function (e) {
+            // e.stopPropagation(); // Không cần thiết nếu link là <a>
+
+            // 1. Xóa tất cả active cũ (cả cha và con)
+            clearAllActiveStyles();
+
+            // 2. Thêm active cho item con này
+            this.classList.add("active");
+
+            // 3. Tìm và thêm active cho menu cha (has-submenu) của nó
+            const parentMenuItem = this.closest(".menu-item.has-submenu");
+            if (parentMenuItem) {
+                parentMenuItem.classList.add("active");
+            }
+        });
     });
 }
 
@@ -313,7 +450,7 @@ function initLitepicker() {
 }
 
 /* ======================================================= */
-/* 6. KHỞI TẠO COMPONENT FILTER (Stores, Category...)   */
+/* KHỞI TẠO COMPONENT FILTER 
 /* ======================================================= */
 function initFilterComponent() {
     const $filterGroups = $('.filter-group');
@@ -379,8 +516,6 @@ function initFilterComponent() {
             $categoryDropdown.html(categoryHTML); // Chèn trực tiếp
         }
     }
-    // === KẾT THÚC HÀM MỚI ===
-
 
     // --- 1. Thêm header "Chọn tối đa X" ---
     $filterGroups.each(function () {
@@ -390,18 +525,12 @@ function initFilterComponent() {
         if (maxCount && $group.find('.filter-dropdown-header').length === 0) {
             const $header = $('<div></div>')
                 .addClass('filter-dropdown-header')
-                .html(`Chọn tối đa ${maxCount} <hr>`);
+                .html(`Select up to ${maxCount} <hr>`);
             $group.find('.filter-dropdown').prepend($header);
         }
     });
 
-    // === GỌI HÀM MỚI TẠI ĐÂY ===
     generateCategories();
-
-
-    // ======================================================
-    // === SỬA LỖI ID VÀ CLASS TẠI ĐÂY ===
-    // ======================================================
 
     // --- 2. Mở/đóng dropdown khi click vào box ---
     // Sửa: Dùng ID selector '#filter-container'
@@ -435,11 +564,6 @@ function initFilterComponent() {
     $('#filter-container').on('click', '.filter-dropdown', function (e) {
         e.stopPropagation();
     });
-
-    // ======================================================
-    // === KẾT THÚC SỬA LỖI ===
-    // ======================================================
-
 
     // --- 6. Khởi tạo trạng thái ban đầu ---
     $filterGroups.each(function () {
