@@ -1,9 +1,8 @@
+dayjs.extend(window.dayjs_plugin_customParseFormat);
 // =======================================================
 // 1. Thông báo lỗi chung
 // =======================================================
-
 const ERROR_CLASS = 'dynamic-error-message';
-
 /**
  * Hiển thị thông báo lỗi động ngay sau phần tử input được chỉ định.
  * * @param {jQuery} inputElement - Đối tượng jQuery của thẻ input
@@ -33,14 +32,6 @@ function isValidEmail(email) {
 // =======================================================
 // 2. Xử lí loading và effect
 // =======================================================
-window.addEventListener("load", () => {
-    const loader = document.getElementById("loading");
-    setTimeout(() => {
-        loader.style.opacity = "0";
-        setTimeout(() => loader.style.display = "none", 400);
-    }, 1000);
-});
-
 // Hiệu ứng loading (fade-in khi trang xuất hiện)
 $(window).on("load", function () {
     window.history.scrollRestoration = "manual";
@@ -68,7 +59,9 @@ $(window).on("load", function () {
 
 // Hiệu ứng chuyển trang mượt (fade-out)
 $(document).ready(function () {
-    $("a").on("click", function (e) {
+    // Sửa: Gắn sự kiện vào 'document' để bắt tất cả các thẻ <a>
+    // ngay cả khi chúng được tải động (dynamic)
+    $(document).on("click", "a", function (e) {
         const href = $(this).attr("href");
 
         // Tránh áp dụng hiệu ứng cho các link không hợp lệ hoặc link neo (#)
@@ -91,67 +84,369 @@ $(document).ready(function () {
     });
 });
 
-// 3. Load components
-$(document).ready(function () {
-    loadComponents();
+/* ========================= */
+/* COMPONENT LOADER          */
+/* ========================= */
+$(function () {
+    const componentsPath = "../components/";
 
-    // --- Logic sidebar (sau khi gọi components) ---
-    function setupSidebarLogic() {
-        // Xử lý Sidebar Toggle (Đóng/Mở Submenu)
-        $('.menu-item.has-submenu > .menu-link').on('click', function (e) {
-            e.preventDefault();
+    // 1. Tải Header
+    $("#app-header").load(componentsPath + "header.html", function (response, status, xhr) {
+        if (status == "success") {
+            initLitepicker();
+            // Đã XÓA initFilterComponent() khỏi đây
+        } else {
+            console.error("Lỗi khi tải header.html: " + xhr.status + " " + xhr.statusText);
+        }
+    });
 
-            const $link = $(this);
-            const $item = $link.parent('.menu-item');
-            const $submenu = $item.find('.submenu');
+    // 2. Tải Footer
+    $("#app-footer").load(componentsPath + "footer.html");
 
-            // Toggle (Đóng/Mở) submenu hiện tại
-            $link.toggleClass('collapsed');
-            $submenu.toggleClass('show');
+    // 3. Tải Sidebar
+    $("#sidebar").load(componentsPath + "sidebar.html", function (
+        response,
+        status,
+        xhr
+    ) {
+        if (status == "success") {
+            initSidebar();
+        } else if (status == "error") {
+            console.error(
+                "Lỗi khi tải sidebar.html: " + xhr.status + " " + xhr.statusText
+            );
+            $("#sidebar").html("<p>Lỗi tải menu. Vui lòng thử lại.</p>");
+        }
+    });
 
-            // Loại bỏ trạng thái 'active' và đóng các submenu khác
-            $('.menu-item.has-submenu').not($item).each(function () {
-                $(this).find('.menu-link').addClass('collapsed');
-                $(this).find('.submenu').removeClass('show');
-            });
+    // 4. Tải FILTER (MỚI)
+    $("#filter-container").load(componentsPath + "filter.html", function (
+        response,
+        status,
+        xhr
+    ) {
+        if (status == "success") {
+            // Chạy hàm init cho filter SAU KHI HTML của nó đã được tải
+            initFilterComponent();
+        } else if (status == "error") {
+            console.error(
+                "Lỗi khi tải filter.html: " + xhr.status + " " + xhr.statusText
+            );
+        }
+    });
+});
 
-            // Xử lý active state:
-            if (!$link.hasClass('collapsed')) {
-                $item.addClass('active');
-            } else {
-                $item.removeClass('active');
-            }
+/* ========================== */
+/* SIDEBAR INTERACTIVE LOGIC  */
+/* ========================== */
+function initSidebar() {
+    const sidebar = document.querySelector("#sidebar");
+    if (!sidebar) return; // Sidebar chưa load
 
-            // Đảm bảo chỉ có một mục không có submenu được active tại một thời điểm
-            $('.menu-item').not($item).not('.has-submenu').removeClass('active');
-        });
+    const menuItems = sidebar.querySelectorAll(".menu-item");
+    if (!menuItems.length) return;
 
-        // Xử lý Active cho mục không có submenu
-        $('.menu-item:not(.has-submenu) > .menu-link').on('click', function (e) {
-            e.preventDefault();
+    menuItems.forEach((item) => {
+        const link = item.querySelector(".menu-link");
+        if (!link) return;
 
-            const $item = $(this).parent('.menu-item');
+        // ===================================
+        // LOGIC CLICK (Active + Submenu)
+        // ===================================
+        link.addEventListener("click", function (e) {
+            // 1. XÓA active của tất cả menu
+            // *** LƯU Ý: Phần này cũng xóa style hover inline ***
+            menuItems.forEach((mi) => {
+                mi.classList.remove("active");
 
-            $('.sidebar-menu .menu-item').removeClass('active');
-            $('.sidebar-menu .submenu').removeClass('show');
-            $('.sidebar-menu .has-submenu .menu-link').addClass('collapsed');
-
-            $item.addClass('active');
-        });
-    }
-
-    // HÀM NHÚNG COMPONENT (có mở rộng)
-    function loadComponents() {
-        const $sidebarPlaceholder = $('#sidebar');
-
-        if ($sidebarPlaceholder.length) {
-            $sidebarPlaceholder.load('../components/sidebar.html', function (response, status, xhr) {
-                if (status == "error") {
-                    console.error("Lỗi khi tải component Sidebar: " + xhr.status + " " + xhr.statusText);
-                } else {
-                    setupSidebarLogic();
+                // XÓA HOVER INLINE (do mouseenter/leave tạo ra)
+                const ml = mi.querySelector(".menu-link");
+                if (ml) {
+                    ml.style.backgroundColor = "";
+                    ml.style.color = "";
+                    ml.style.boxShadow = "";
+                    mi.querySelectorAll(".menu-icon-bg i, .toggle-icon").forEach(
+                        (icon) => {
+                            icon.style.color = "";
+                        }
+                    );
                 }
             });
+
+            // 2. THÊM active cho menu được click
+            item.classList.add("active");
+            // Khi 'active' được thêm, style .active từ CSS sẽ tự động áp dụng
+
+            // 3. XỬ LÝ SUBMENU (nếu có)
+            if (item.classList.contains("has-submenu")) {
+                e.preventDefault();
+
+                const submenu = item.querySelector(".submenu");
+
+                // ** SỬA LỖI: Dùng class '.show' để khớp với CSS của bạn **
+                const isOpen = submenu.classList.contains("show");
+
+                // 1. ĐÓNG TẤT CẢ submenu KHÁC
+                document.querySelectorAll(".has-submenu .submenu").forEach((s) => {
+                    if (s !== submenu) s.classList.remove("show");
+                });
+                document.querySelectorAll(".has-submenu .menu-link").forEach((l) => {
+                    if (l !== link) l.classList.add("collapsed");
+                });
+
+                // 2. MỞ/ĐÓNG submenu HIỆN TẠI
+                if (!isOpen) {
+                    link.classList.remove("collapsed");
+                    submenu.classList.add("show");
+                } else {
+                    link.classList.add("collapsed");
+                    submenu.classList.remove("show");
+                }
+            }
+        });
+
+        // ===================================
+        // LOGIC HOVER (Giữ theo yêu cầu)
+        // ===================================
+        item.addEventListener("mouseenter", function () {
+            if (!this.classList.contains("active")) {
+                const ml = this.querySelector(".menu-link");
+                ml.style.backgroundColor = "var(--primary)";
+                ml.style.color = "var(--white)";
+                ml.style.boxShadow = "0 4px 6px rgba(79, 209, 197, 0.3)";
+                this.querySelectorAll(".menu-icon-bg i, .toggle-icon").forEach(
+                    (icon) => {
+                        icon.style.color = "var(--white)";
+                    }
+                );
+            }
+        });
+
+        item.addEventListener("mouseleave", function () {
+            if (!this.classList.contains("active")) {
+                const ml = this.querySelector(".menu-link");
+                ml.style.backgroundColor = "";
+                ml.style.color = "";
+                ml.style.boxShadow = "";
+                this.querySelectorAll(".menu-icon-bg i, .toggle-icon").forEach(
+                    (icon) => {
+                        icon.style.color = "";
+                    }
+                );
+            }
+        });
+
+    });
+}
+
+/* ======================================================= */
+/* KHỞI TẠO BỘ LỌC NGÀY 
+/* ======================================================= */
+function initLitepicker() {
+    // 1. Lấy tất cả các phần tử DOM cần thiết (Không đổi)
+    const triggerBtn = document.getElementById('calendarTriggerBtn');
+    const startDateDisplay = document.getElementById('startDateDisplay');
+    const endDateDisplay = document.getElementById('endDateDisplay');
+    const startDateHidden = document.getElementById('startDate');
+    const endDateHidden = document.getElementById('endDate');
+
+    // 2. Kiểm tra (Không đổi)
+    if (!triggerBtn || !startDateDisplay || !endDateDisplay || !startDateHidden || !endDateHidden) {
+        console.warn("Không tìm thấy các phần tử (button/inputs) để khởi tạo Litepicker.");
+        return;
+    }
+
+    // 3. Lấy giá trị ban đầu và Định dạng (Không đổi)
+    const initialStart = startDateHidden.value;
+    const initialEnd = endDateHidden.value;
+    const DISPLAY_FORMAT = 'DD MMMM YYYY';
+    const DATA_FORMAT = 'DD-MM-YYYY';
+
+    // 4. Cấu hình (Không đổi)
+    const picker = new Litepicker({
+        element: startDateHidden,
+        singleMode: false,
+        allowRepick: true,
+        format: DATA_FORMAT,
+        startDate: initialStart,
+        endDate: initialEnd,
+        splitView: true,
+        numberOfMonths: 2,
+        numberOfColumns: 2,
+    });
+
+    // 5. Cập nhật hiển thị ban đầu (ĐÃ THÊM 2 DÒNG .size)
+    const initialStartDateObj = picker.getStartDate();
+    const initialEndDateObj = picker.getEndDate();
+    if (initialStartDateObj && initialEndDateObj) {
+        // Cập nhật giá trị
+        startDateDisplay.value = initialStartDateObj.format(DISPLAY_FORMAT);
+        endDateDisplay.value = initialEndDateObj.format(DISPLAY_FORMAT);
+
+        // *** THÊM MỚI: Cập nhật size (co dãn) ***
+        startDateDisplay.size = startDateDisplay.value.length;
+        endDateDisplay.size = endDateDisplay.value.length;
+    }
+
+    // 6. Lắng nghe sự kiện CHỌN XONG (ĐÃ THÊM 2 DÒNG .size)
+    picker.on('selected', (date1, date2) => {
+        // Cập nhật giá trị
+        startDateDisplay.value = date1.format(DISPLAY_FORMAT);
+        endDateDisplay.value = date2.format(DISPLAY_FORMAT);
+
+        startDateHidden.value = date1.format(DATA_FORMAT);
+        endDateHidden.value = date2.format(DATA_FORMAT);
+
+        // *** THÊM MỚI: Cập nhật size (co dãn) ***
+        startDateDisplay.size = startDateDisplay.value.length;
+        endDateDisplay.size = endDateDisplay.value.length;
+    });
+
+    // 7. "Cầu nối" Click (Không đổi)
+    triggerBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        picker.show(triggerBtn);
+    });
+
+    console.log("Litepicker đã được khởi tạo và gắn vào icon!");
+}
+
+/* ======================================================= */
+/* 6. KHỞI TẠO COMPONENT FILTER (Stores, Category...)   */
+/* ======================================================= */
+function initFilterComponent() {
+    const $filterGroups = $('.filter-group');
+    if (!$filterGroups.length) {
+        console.warn("Không tìm thấy .filter-group để khởi tạo.");
+        return;
+    }
+
+    // --- Helper 1: Cập nhật text hiển thị ---
+    function updateDisplayText($group) {
+        const $displayText = $group.find('.filter-display-text');
+        const $checkedInputs = $group.find('input:checked');
+
+        if ($checkedInputs.length === 0) {
+            $displayText.html('&nbsp;').removeClass('has-selection');
+        } else {
+            const selectedValues = $checkedInputs.map(function () {
+                return $(this).val();
+            }).get().join(', ');
+
+            $displayText.text(selectedValues).addClass('has-selection');
         }
     }
-});
+
+    // --- Helper 2: Xử lý giới hạn (max) ---
+    function handleSelectionLimits($group) {
+        const maxCount = parseInt($group.attr('data-max'), 10);
+        if (!maxCount) return;
+
+        const $checkboxes = $group.find('input[type="checkbox"]');
+        const checkedCount = $group.find('input[type="checkbox"]:checked').length;
+
+        if (checkedCount >= maxCount) {
+            $checkboxes.not(':checked').prop('disabled', true)
+                .closest('.filter-item').addClass('disabled');
+        } else {
+            $checkboxes.prop('disabled', false)
+                .closest('.filter-item').removeClass('disabled');
+        }
+    }
+
+    // --- Helper 3: Tự động tạo Category (thay cho document.write) ---
+    function generateCategories() {
+        // Nhắm vào dropdown của group category bằng ID
+        const $categoryDropdown = $('#category-filter-group .filter-dropdown');
+        if (!$categoryDropdown.length) return;
+
+        let categoryHTML = '';
+        for (let i = 1; i <= 12; i++) {
+            categoryHTML += `
+                <div class="filter-item">
+                    <input type="checkbox" id="cat${i}" value="Category ${i}">
+                    <label for="cat${i}">Category ${i}</label>
+                </div>
+            `;
+        }
+
+        // Chèn HTML category vào sau header (nếu có)
+        const $header = $categoryDropdown.find('.filter-dropdown-header');
+        if ($header.length) {
+            $header.after(categoryHTML); // Chèn sau header
+        } else {
+            $categoryDropdown.html(categoryHTML); // Chèn trực tiếp
+        }
+    }
+    // === KẾT THÚC HÀM MỚI ===
+
+
+    // --- 1. Thêm header "Chọn tối đa X" ---
+    $filterGroups.each(function () {
+        const $group = $(this);
+        const maxCount = parseInt($group.attr('data-max'), 10);
+        // Kiểm tra xem header đã tồn tại chưa
+        if (maxCount && $group.find('.filter-dropdown-header').length === 0) {
+            const $header = $('<div></div>')
+                .addClass('filter-dropdown-header')
+                .html(`Chọn tối đa ${maxCount} <hr>`);
+            $group.find('.filter-dropdown').prepend($header);
+        }
+    });
+
+    // === GỌI HÀM MỚI TẠI ĐÂY ===
+    generateCategories();
+
+
+    // ======================================================
+    // === SỬA LỖI ID VÀ CLASS TẠI ĐÂY ===
+    // ======================================================
+
+    // --- 2. Mở/đóng dropdown khi click vào box ---
+    // Sửa: Dùng ID selector '#filter-container'
+    $('#filter-container').on('click', '.filter-display-box', function (e) {
+        e.stopPropagation();
+        const $currentGroup = $(this).closest('.filter-group');
+        $('.filter-group').not($currentGroup).removeClass('open');
+        $currentGroup.toggleClass('open');
+    });
+
+    // --- 3. Xử lý khi chọn một item (change) ---
+    // Sửa: Dùng ID selector '#filter-container'
+    $('#filter-container').on('change', 'input[type="checkbox"], input[type="radio"]', function () {
+        const $group = $(this).closest('.filter-group');
+
+        handleSelectionLimits($group);
+        updateDisplayText($group);
+
+        if ($(this).is(':radio')) {
+            $group.removeClass('open');
+        }
+    });
+
+    // --- 4. Đóng dropdown khi click ra ngoài ---
+    $(window).on('click', function () {
+        $filterGroups.removeClass('open');
+    });
+
+    // --- 5. Ngăn click BÊN TRONG dropdown làm đóng dropdown ---
+    // Sửa: Dùng ID selector '#filter-container'
+    $('#filter-container').on('click', '.filter-dropdown', function (e) {
+        e.stopPropagation();
+    });
+
+    // ======================================================
+    // === KẾT THÚC SỬA LỖI ===
+    // ======================================================
+
+
+    // --- 6. Khởi tạo trạng thái ban đầu ---
+    $filterGroups.each(function () {
+        const $group = $(this);
+        updateDisplayText($group);
+        handleSelectionLimits($group);
+    });
+
+    console.log("Filter component đã được khởi tạo.");
+}
