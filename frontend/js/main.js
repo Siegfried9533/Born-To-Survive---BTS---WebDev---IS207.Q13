@@ -1,4 +1,8 @@
-dayjs.extend(window.dayjs_plugin_customParseFormat);
+if (typeof dayjs !== 'undefined' && window.dayjs_plugin_utc && window.dayjs_plugin_timezone && window.dayjs_plugin_customParseFormat) {
+    dayjs.extend(window.dayjs_plugin_utc);
+    dayjs.extend(window.dayjs_plugin_timezone);
+    dayjs.extend(window.dayjs_plugin_customParseFormat);
+}
 // =======================================================
 // 1. Thông báo lỗi chung
 // =======================================================
@@ -85,7 +89,7 @@ $(document).ready(function () {
 });
 
 /* ========================= */
-/* COMPONENT LOADER          */
+/* COMPONENT LOADER          
 /* ========================= */
 $(function () {
     const componentsPath = "../components/";
@@ -134,6 +138,11 @@ $(function () {
             );
         }
     });
+
+    // chỉ chạy khi ở trang profile.html
+    if ($('main.page-profile').length > 0) {
+        initProfilePage();
+    }
 });
 
 /* ========================== */
@@ -240,23 +249,23 @@ $(function () {
 // }
 
 /* ======================================================= */
-/* SIDEBAR INTERACTIVE LOGIC (ĐÃ NÂNG CẤP)                 */
+/* SIDEBAR INTERACTIVE LOGIC
 /* ======================================================= */
 function initSidebar() {
     const sidebar = document.querySelector("#sidebar");
-    if (!sidebar) return;
+    if (!sidebar) {
+        console.warn("Sidebar not found, skipping init.");
+        return;
+    }
 
     const menuItems = sidebar.querySelectorAll(".menu-item");
-    const submenuItems = sidebar.querySelectorAll(".submenu-item"); // <== THÊM MỚI
+    const submenuItems = sidebar.querySelectorAll(".submenu-item");
 
     if (!menuItems.length) return;
 
-    // --- Helper 1: Xóa tất cả style hover/active ---
     function clearAllActiveStyles() {
         menuItems.forEach((mi) => {
             mi.classList.remove("active");
-
-            // Xóa style inline do hover
             const ml = mi.querySelector(".menu-link");
             if (ml) {
                 ml.style.backgroundColor = "";
@@ -269,12 +278,8 @@ function initSidebar() {
                 );
             }
         });
-
-        // Xóa active của submenu item
         submenuItems.forEach((si) => si.classList.remove("active"));
     }
-
-    // --- Helper 2: Đóng tất cả submenu ---
     function closeAllSubmenus() {
         sidebar.querySelectorAll(".has-submenu .submenu").forEach((s) => {
             s.classList.remove("show");
@@ -284,48 +289,87 @@ function initSidebar() {
         });
     }
 
-    // ===================================
-    // LOGIC CLICK CHO MENU-ITEM (CHA)
-    // ===================================
+    // ==================================================
+    // TỰ ĐỘNG ACTIVE MENU KHI TẢI TRANG
+    // ==================================================
+
+    // 1. Lấy tên file của trang hiện tại (ví dụ: "overview.html")
+    const currentFile = window.location.pathname.split('/').pop();
+    // Nếu path rỗng (trang chủ), mặc định là "overview.html"
+    const currentFilename = (currentFile === "") ? "overview.html" : currentFile;
+
+    let activeLinkFound = false;
+
+    // 1a. Kiểm tra các link submenu con
+    submenuItems.forEach((subItem) => {
+        const subLink = subItem.querySelector("a");
+        if (subLink) {
+            const linkPath = subLink.getAttribute("href");
+            if (linkPath && linkPath !== "#") {
+                // Lấy tên file từ href (ví dụ: "top-category.html")
+                const linkFile = linkPath.split('/').pop();
+
+                // So sánh tên file
+                if (linkFile && currentFilename === linkFile) {
+                    subItem.classList.add("active");
+                    activeLinkFound = true;
+
+                    const parentMenuItem = subItem.closest(".menu-item.has-submenu");
+                    if (parentMenuItem) {
+                        parentMenuItem.classList.add("active");
+                        parentMenuItem.querySelector(".menu-link").classList.remove("collapsed");
+                        parentMenuItem.querySelector(".submenu").classList.add("show");
+                    }
+                }
+            }
+        }
+    });
+
+    // 1b. Nếu không tìm thấy ở con, kiểm tra các link cha
+    if (!activeLinkFound) {
+        menuItems.forEach((item) => {
+            if (!item.classList.contains("has-submenu")) {
+                const link = item.querySelector(".menu-link");
+                const linkPath = link.getAttribute("href");
+
+                if (linkPath && linkPath !== "#") {
+                    // Lấy tên file từ href
+                    const linkFile = linkPath.split('/').pop();
+
+                    // So sánh tên file
+                    if (linkFile && currentFilename === linkFile) {
+                        item.classList.add("active");
+                        activeLinkFound = true;
+                    }
+                }
+            }
+        });
+    }
+
+    // (Nếu là profile.html, href không có trong sidebar -> không active -> OK)
     menuItems.forEach((item) => {
         const link = item.querySelector(".menu-link");
         if (!link) return;
 
         link.addEventListener("click", function (e) {
-
-            // 1. Xóa tất cả active cũ (cả cha và con)
             clearAllActiveStyles();
-
-            // 2. Thêm active cho menu cha được click
             item.classList.add("active");
 
-            // 3. XỬ LÝ SUBMENU
             if (item.classList.contains("has-submenu")) {
-                e.preventDefault(); // Ngăn trang nhảy
+                e.preventDefault();
                 const submenu = item.querySelector(".submenu");
                 const isOpen = submenu.classList.contains("show");
-
-                // Đóng tất cả submenu khác
                 closeAllSubmenus();
-
-                // Mở/Đóng submenu hiện tại
                 if (!isOpen) {
                     link.classList.remove("collapsed");
                     submenu.classList.add("show");
                 }
-                // (Nếu đã mở, hàm closeAllSubmenus() ở trên đã lo việc đóng nó)
-
             } else {
-                // === YÊU CẦU 2: Tự động đóng ===
-                // Nếu click vào menu thường (không có con)
-                // thì đóng tất cả submenu đang mở
                 closeAllSubmenus();
             }
         });
 
-        // ===================================
-        // LOGIC HOVER (Giữ nguyên)
-        // ===================================
+        // --- Logic Hover (Giữ nguyên) ---
         item.addEventListener("mouseenter", function () {
             if (!this.classList.contains("active")) {
                 const ml = this.querySelector(".menu-link");
@@ -354,26 +398,21 @@ function initSidebar() {
         });
     });
 
-    // ===================================
-    // === YÊU CẦU 1: ACTIVE SUBMENU ITEM ===
-    // ===================================
     submenuItems.forEach((subItem) => {
-        subItem.addEventListener("click", function (e) {
-            // e.stopPropagation(); // Không cần thiết nếu link là <a>
+        const subLink = subItem.querySelector("a");
+        if (!subLink) return;
 
-            // 1. Xóa tất cả active cũ (cả cha và con)
+        subLink.addEventListener("click", function (e) {
             clearAllActiveStyles();
-
-            // 2. Thêm active cho item con này
-            this.classList.add("active");
-
-            // 3. Tìm và thêm active cho menu cha (has-submenu) của nó
+            subItem.classList.add("active");
             const parentMenuItem = this.closest(".menu-item.has-submenu");
             if (parentMenuItem) {
                 parentMenuItem.classList.add("active");
             }
         });
     });
+
+    console.log("Sidebar đã được khởi tạo với logic so sánh tên file.");
 }
 
 /* ======================================================= */
@@ -573,4 +612,260 @@ function initFilterComponent() {
     });
 
     console.log("Filter component đã được khởi tạo.");
+}
+
+/* ======================================================= */
+/* 7. KHỞI TẠO LOGIC TRANG PROFILE (NÂNG CẤP)
+/* ======================================================= */
+function initProfilePage() {
+
+    // --- (Phần 1: Logic Edit/Save và DoB Picker giữ nguyên) ---
+    const dobPicker = flatpickr("#dob-picker", {
+        dateFormat: "Y-m-d",
+        allowInput: false,
+    });
+
+    const $editButton = $('#btn-edit-profile');
+    const $profileInputs = $('.profile-input');
+    const $dobPickerInput = $('#dob-picker');
+
+    $editButton.on('click', function () {
+        const $this = $(this);
+        if ($this.text() === "Edit") {
+            $profileInputs.prop('disabled', false);
+            $dobPickerInput.prop('disabled', false);
+            $this.text('Save').removeClass('btn-primary').addClass('btn-success');
+        } else {
+            $profileInputs.prop('disabled', true);
+            $dobPickerInput.prop('disabled', true);
+            $this.text('Edit').removeClass('btn-success').addClass('btn-primary');
+        }
+    });
+
+    // =============================================
+    // --- PHẦN 2: LOGIC LỊCH TASK (NÂNG CẤP) ---
+    // =============================================
+
+    // 1. Cấu trúc dữ liệu Task (Lưu nhiều task, thời gian, trạng thái)
+    let tasks = JSON.parse(localStorage.getItem('calendarTasks')) || {};
+    /* Cấu trúc mẫu:
+    tasks = {
+      "2025-11-10": [
+        { "id": 167888, "time": "09:00", "text": "Task A", "completed": false },
+        { "id": 167999, "time": "14:30", "text": "Task B", "completed": true }
+      ]
+    }
+    */
+
+    // 2. Lấy các phần tử UI
+    const $taskAddForm = $('#task-add-form');
+    const $taskFormLabel = $('#task-form-label');
+    const $taskTimeInput = $('#task-time-input'); // (Task 2)
+    const $taskTextInput = $('#task-text-input');
+    const $taskListArea = $('#task-list-area');
+    const $taskNotificationArea = $('#task-notification-area'); // (Task 3)
+
+    let currentSelectedDate = null; // Biến lưu ngày đang chọn
+
+    // 3. Khởi tạo Input chọn giờ (Task 2)
+    const timePicker = flatpickr($taskTimeInput, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i", // 24h format (VD: 14:30)
+    });
+
+    // 4. Các hàm Helper
+    function saveTasks() {
+        localStorage.setItem('calendarTasks', JSON.stringify(tasks));
+    }
+    function generateId() {
+        return Date.now() + Math.floor(Math.random() * 1000);
+    }
+
+    // === TASK 3: HÀM HIỂN THỊ THÔNG BÁO ===
+    function showTaskMessage(message, isError = false) {
+        const $notification = $('<div></div>')
+            .addClass('task-notification')
+            .addClass(isError ? 'error' : 'success')
+            .text(message);
+
+        $taskNotificationArea.html($notification);
+
+        // Tự động biến mất sau 3.5 giây
+        setTimeout(() => {
+            $notification.fadeOut(500, function () {
+                $(this).remove();
+            });
+        }, 3500);
+    }
+    // (Xóa lỗi của riêng form thêm task)
+    function clearFormErrors() {
+        $taskTimeInput.next(`.${ERROR_CLASS}`).remove();
+        $taskTextInput.next(`.${ERROR_CLASS}`).remove();
+    }
+
+    // === TASK 4: HÀM HIỂN THỊ DANH SÁCH TASK CHO 1 NGÀY ===
+    function renderTasksForDay(dateStr) {
+        $taskListArea.empty(); // Xóa list cũ
+        const dayTasks = tasks[dateStr] || [];
+
+        if (dayTasks.length === 0) {
+            $taskListArea.html('<p class="text-muted text-center fs-small mt-2">No tasks for this day.</p>');
+            return;
+        }
+
+        // Sắp xếp task theo thời gian
+        dayTasks.sort((a, b) => (a.time > b.time) ? 1 : -1);
+
+        dayTasks.forEach(task => {
+            const isCompleted = task.completed;
+            const itemClass = isCompleted ? 'task-item completed' : 'task-item';
+            const completeIcon = isCompleted ? 'fa-undo' : 'fa-check';
+            const completeText = isCompleted ? 'Undo' : 'Done';
+
+            const taskHTML = `
+                <div class="${itemClass}" data-task-id="${task.id}">
+                    <span class="task-item-time">${task.time}</span>
+                    <div class="task-item-text">
+                        ${task.text}
+                    </div>
+                    <div class="task-item-actions d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-secondary btn-complete">
+                            <i class="fa-solid ${completeIcon} me-1"></i> ${completeText}
+                        </button>
+                        <button class="btn btn-sm btn-delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $taskListArea.append(taskHTML);
+        });
+    }
+
+
+    // 5. Khởi tạo Lịch Widget (Nâng cấp)
+    const calendarWidget = flatpickr("#flatpickr-calendar", {
+        inline: true,
+        dateFormat: "Y-m-d",
+
+        // === TASK 4: VẼ BORDER ĐỎ CHO NGÀY CÓ TASK ===
+        onDayCreate: function (dObj, dStr, fp, dayElem) {
+            const date = dayjs(dObj).format("YYYY-MM-DD");
+            const dayTasks = tasks[date] || [];
+
+            // Chỉ thêm border nếu có task VÀ ít nhất 1 task chưa hoàn thành
+            if (dayTasks.length > 0 && dayTasks.some(task => !task.completed)) {
+                dayElem.classList.add("day-with-task");
+            }
+        },
+
+        // === TASK 2 & 4: MỞ UI KHI CLICK VÀO 1 NGÀY ===
+        onChange: function (selectedDates, dateStr, instance) {
+            currentSelectedDate = dayjs(dateStr).format("YYYY-MM-DD");
+
+            // Cập nhật label cho form Thêm Task
+            $taskFormLabel.text(`Add Task for ${dayjs(dateStr).format("DD MMMM, YYYY")}`);
+
+            // Hiển thị danh sách task (Task 4)
+            renderTasksForDay(currentSelectedDate);
+
+            // Hiển thị form thêm task (Task 2)
+            $taskAddForm.slideDown(200);
+            clearFormErrors(); // Xóa lỗi cũ
+        }
+    });
+
+    // 6. Logic các nút
+
+    // === TASK 2: SUBMIT FORM THÊM TASK MỚI ===
+    $taskAddForm.on('submit', function (e) {
+        e.preventDefault(); // Ngăn tải lại trang
+        clearFormErrors(); // Xóa lỗi cũ
+
+        const taskTime = $taskTimeInput.val();
+        const taskText = $taskTextInput.val();
+
+        // === TASK 2: VALIDATE (KIỂM TRA TRỐNG) ===
+        let isValid = true;
+        if (!taskTime) {
+            // Dùng hàm thông báo lỗi chung của bạn
+            displayError($taskTimeInput, "Please select a time.");
+            isValid = false;
+        }
+        if (!taskText) {
+            displayError($taskTextInput, "Please enter task details.");
+            isValid = false;
+        }
+        if (!isValid || !currentSelectedDate) return;
+
+        // Tạo task mới
+        const newTask = {
+            id: generateId(),
+            time: taskTime,
+            text: taskText,
+            completed: false
+        };
+
+        // Thêm vào data
+        if (!tasks[currentSelectedDate]) {
+            tasks[currentSelectedDate] = [];
+        }
+        tasks[currentSelectedDate].push(newTask);
+
+        saveTasks();
+        calendarWidget.redraw(); // Vẽ lại lịch (để thêm border đỏ)
+        renderTasksForDay(currentSelectedDate); // Cập nhật list
+
+        // Reset form
+        $taskTextInput.val('');
+        timePicker.clear();
+
+        // === TASK 3: HIỂN THỊ THÔNG BÁO THÀNH CÔNG ===
+        showTaskMessage("Task added successfully!");
+    });
+
+    // === TASK 4: CLICK NÚT COMPLETE/DELETE (Dùng Event Delegation) ===
+    $taskListArea.on('click', '.btn-delete', function () {
+        const $taskItem = $(this).closest('.task-item');
+        const taskId = $taskItem.data('task-id');
+
+        // Xóa task khỏi mảng
+        let dayTasks = tasks[currentSelectedDate];
+        tasks[currentSelectedDate] = dayTasks.filter(task => task.id !== taskId);
+
+        saveTasks();
+        calendarWidget.redraw(); // Vẽ lại lịch (có thể xóa border)
+        renderTasksForDay(currentSelectedDate); // Cập nhật list
+    });
+
+    $taskListArea.on('click', '.btn-complete', function () {
+        const $taskItem = $(this).closest('.task-item');
+        const taskId = $taskItem.data('task-id');
+
+        // Tìm và thay đổi trạng thái
+        let dayTasks = tasks[currentSelectedDate];
+        const taskToToggle = dayTasks.find(task => task.id === taskId);
+
+        if (taskToToggle) {
+            taskToToggle.completed = !taskToToggle.completed; // Đảo trạng thái
+        }
+
+        saveTasks();
+        calendarWidget.redraw(); // Vẽ lại lịch (có thể xóa/thêm border)
+        renderTasksForDay(currentSelectedDate); // Cập nhật list
+    });
+
+    // --- (Phần 7: Logic Timezone giữ nguyên) ---
+    const $timeZoneSelect = $('#timeZone');
+    function updateCalendarToday() {
+        const selectedTZ = $timeZoneSelect.val();
+        const todayInTZ = dayjs.tz(Date.now(), selectedTZ).format("YYYY-MM-DD");
+        // Sửa: Dùng 'set Date' để đánh dấu ngày 'hôm nay'
+        calendarWidget.setDate(todayInTZ, false);
+    }
+    $timeZoneSelect.on('change', updateCalendarToday);
+    updateCalendarToday(); // Chạy lần đầu
+
+    console.log("Trang Profile đã được khởi tạo (với Lịch Task Nâng Cao).");
 }

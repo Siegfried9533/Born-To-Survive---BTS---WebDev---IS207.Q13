@@ -757,3 +757,371 @@ body {
 .container-fluid-dashboard {
   max-width: 100%;
 }
+
+
+/* ===================== PROFILE ===================== */
+
+/* Ẩn date-filter trong header trên trang profile */
+.page-profile .date-filter-row {
+  display: none;
+}
+
+/* Card chính chứa form */
+.profile-card {
+  border: none;
+  border-radius: 12px;
+}
+
+.profile-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+/* Styles cho form inputs (chung) */
+.profile-card .form-control,
+.profile-card .form-select {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.profile-card .form-control:focus,
+.profile-card .form-select:focus {
+  background-color: var(--white);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.2);
+}
+
+/* === Styles cho Date of Birth === */
+.profile-input-icon {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: 0.375rem 0 0 0.375rem;
+  transition: opacity 0.2s;
+}
+
+.profile-input-icon i {
+  color: var(--primary);
+}
+
+#dob-picker {
+  border-radius: 0 0.375rem 0.375rem 0;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+#dob-picker.flatpickr-disabled {
+  background-color: var(--bg);
+  opacity: 0.7;
+}
+
+/* (Style cursor sẽ xử lý ở cuối) */
+
+/* === Styles cho Widgets (Calendar, Conversations) === */
+.profile-widget {
+  border: none;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+/* === TASK 1: CĂN GIỮA LỊCH === */
+#flatpickr-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+#flatpickr-calendar .flatpickr-calendar {
+  min-width: 280px;
+  box-shadow: none;
+  background: transparent;
+}
+
+
+/* === Cài đặt Lịch Widget === */
+/* Header (Tháng/Năm) */
+.flatpickr-months {
+  background: transparent;
+  padding: 0 0 10px 0;
+}
+
+.flatpickr-month {
+  color: var(--dark);
+}
+
+.flatpickr-current-month .cur-month {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+/* Mũi tên điều hướng */
+.flatpickr-prev-month,
+.flatpickr-next-month {
+  color: var(--muted);
+  padding: 5px;
+  top: 3px;
+}
+
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+  color: var(--primary);
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+.flatpickr-prev-month svg,
+.flatpickr-next-month svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Các ngày trong tuần (SUN, MON...) */
+.flatpickr-weekdaycontainer {
+  padding-bottom: 10px;
+}
+
+span.flatpickr-weekday {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Các ngày (Số) */
+.flatpickr-day {
+  color: var(--dark);
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  max-width: 38px;
+  height: 38px;
+  line-height: 38px;
+}
+
+/* Ngày mờ (tháng trước/sau) */
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.flatpickr-day:hover {
+  background: var(--second-hover);
+  border-radius: 50%;
+}
+
+/* === Cài đặt màu cho các loại ngày (QUAN TRỌNG) === */
+/* FIX: Ngày hôm nay (Today) màu Primary */
+.flatpickr-day.today {
+  background: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+}
+
+.flatpickr-day.today:hover {
+  background: var(--primary-hover);
+}
+
+/* === TASK 3 (YÊU CẦU MỚI): NGÀY ĐƯỢC CHỌN (SELECTED) MÀU VIỀN PRIMARY === */
+.flatpickr-day.selected {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+.flatpickr-day.selected:hover {
+  background: #e6f7ec;
+  /* Thêm nền xanh lá rất nhạt khi hover */
+}
+
+/* Đảm bảo 'Today' (xanh lá đầy) luôn thắng 'Selected' (xanh lá viền) */
+.flatpickr-day.today.selected {
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  /* Bỏ viền của .selected */
+}
+
+/* TASK 4: Ngày có task (Border đỏ) */
+.flatpickr-day.day-with-task {
+  outline: 2px solid var(--danger);
+  outline-offset: -2px;
+}
+
+.flatpickr-day.day-with-task.selected {
+  outline-offset: -3px;
+}
+
+.flatpickr-day.day-with-task.today {
+  outline: none;
+  /* Không cần border đỏ nếu là ngày hôm nay */
+}
+
+
+/* === TASK 3: KHU VỰC THÔNG BÁO TASK === */
+.task-notification {
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.task-notification.success {
+  background-color: #e6f7ec;
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.task-notification.error {
+  background-color: #fef2f2;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+/* === TASK 4: DANH SÁCH TASK HIỂN THỊ === */
+#task-list-area {
+  border-top: 1px solid var(--border);
+  margin-top: 15px;
+  padding-top: 5px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-item-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  width: 50px;
+}
+
+.task-item-text {
+  flex-grow: 1;
+  font-size: 14px;
+  color: var(--dark);
+}
+
+.task-item-actions .btn {
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+.task-item-actions .btn-complete {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.task-item-actions .btn-complete:hover {
+  background-color: var(--success);
+  color: var(--white);
+}
+
+.task-item-actions .btn-delete {
+  color: var(--muted);
+  border: none;
+}
+
+.task-item-actions .btn-delete:hover {
+  color: var(--danger);
+  background-color: var(--bg);
+}
+
+/* Task đã hoàn thành */
+.task-item.completed .task-item-time,
+.task-item.completed .task-item-text {
+  text-decoration: line-through;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.task-item.completed .btn-complete {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.task-item.completed .btn-complete:hover {
+  background-color: var(--warning);
+  color: var(--white);
+}
+
+/* === TASK 2: FORM THÊM TASK === */
+#task-add-form .form-control {
+  background-color: var(--white);
+  border: 1px solid var(--border);
+}
+
+#task-add-form .form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.2);
+}
+
+#task-add-form .btn-success {
+  background-color: var(--success);
+  border-color: var(--success);
+}
+
+#task-add-form .btn-success:hover {
+  background-color: #3f9260;
+}
+
+/* === Conversation Widget === */
+.conversation-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 10px;
+}
+
+/* (Code Conversation còn lại giữ nguyên) */
+.conversation-list img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.conversation-list .conversation-text {
+  flex-grow: 1;
+}
+
+.conversation-list .conversation-text p {
+  margin-bottom: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.conversation-list .btn-light {
+  --bs-btn-bg: var(--bg);
+  --bs-btn-border-color: var(--border);
+  --bs-btn-hover-bg: var(--second-hover);
+  --bs-btn-hover-border-color: var(--border);
+  font-weight: 500;
+}
+
+
+/* === FIX CURSOR (TỪ CODE CỦA BẠN) === */
+.profile-card .form-control:disabled,
+.profile-card .form-select:disabled,
+#dob-picker:disabled,
+.input-group:has(#dob-picker:disabled) .profile-input-icon {
+  cursor: default;
+}
+
+.profile-card .form-control:enabled {
+  cursor: text;
+}
+
+.profile-card .form-select:enabled,
+#dob-picker:enabled,
+.input-group:has(#dob-picker:enabled) .profile-input-icon {
+  cursor: pointer;
+}
