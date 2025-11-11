@@ -95,18 +95,20 @@ body {
 }
 
 .skeleton-shimmer::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
   transform: translateX(-100%);
-  background-image: linear-gradient(90deg,
-      rgba(255, 255, 255, 0) 0,
-      rgba(255, 255, 255, 0.4) 20%,
-      rgba(255, 255, 255, 0.7) 60%,
-      rgba(255, 255, 255, 0));
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.4) 20%,
+    rgba(255, 255, 255, 0.7) 60%,
+    rgba(255, 255, 255, 0)
+  );
   animation: shimmer 1.5s infinite;
 }
 
@@ -223,23 +225,23 @@ body {
   font-size: 12px;
 }
 
-.menu-item:hover>.menu-link {
+.menu-item:hover > .menu-link {
   background-color: var(--second-hover) !important;
   color: var(--dark) !important;
   box-shadow: 0 4px 6px rgba(79, 209, 197, 0.3);
 }
 
-.menu-item:hover>.menu-link .menu-icon-bg i,
-.menu-item.active>.menu-link .menu-icon-bg i {
+.menu-item:hover > .menu-link .menu-icon-bg i,
+.menu-item.active > .menu-link .menu-icon-bg i {
   color: var(--white) !important;
 }
 
-.menu-item:hover>.menu-link .menu-icon-bg,
-.menu-item.active>.menu-link .menu-icon-bg {
+.menu-item:hover > .menu-link .menu-icon-bg,
+.menu-item.active > .menu-link .menu-icon-bg {
   background-color: var(--primary);
 }
 
-.menu-item.active>.menu-link {
+.menu-item.active > .menu-link {
   /* background-color: var(--white) !important; */
   color: black !important;
   font-weight: 550;
@@ -258,8 +260,8 @@ body {
 }
 
 /* Mũi tên trắng khi menu cha active HOẶC hover */
-.menu-item:hover>.menu-link .toggle-icon,
-.menu-item.active>.menu-link .toggle-icon {
+.menu-item:hover > .menu-link .toggle-icon,
+.menu-item.active > .menu-link .toggle-icon {
   color: var(--dark) !important;
 }
 
@@ -370,11 +372,10 @@ body {
   min-width: 250px;
   width: 250px;
   border-radius: 50px;
-  border: 1px solid var(--bs-border-color, #E0E0E0);
+  border: 1px solid var(--bs-border-color, #e0e0e0);
   box-shadow: none;
   outline: none;
-  transition: width 0.3s ease-in-out,
-    border-color 0.3s ease-in-out,
+  transition: width 0.3s ease-in-out, border-color 0.3s ease-in-out,
     box-shadow 0.3s ease-in-out;
 }
 
@@ -413,7 +414,7 @@ body {
 }
 
 .icon-btn:hover {
-  color: #DDDDDD;
+  color: #dddddd;
 }
 
 .badge-dot {
@@ -614,7 +615,7 @@ body {
 
 /* Mũi tên */
 .filter-display-box::after {
-  content: '\f078';
+  content: "\f078";
   font-family: "Font Awesome 6 Free";
   font-weight: 900;
   font-size: 12px;
@@ -758,6 +759,64 @@ body {
   max-width: 100%;
 }
 
+/* ===================== OVERVIEW CHARTS ===================== */
+.section-card {
+  background: var(--white);
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card-title {
+  font-family: "Roboto", sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1f2937;
+  letter-spacing: -0.2px;
+}
+
+canvas {
+  max-width: 100%;
+}
+
+.chart-wrapper,
+.chart-wrapper-evolution {
+  position: relative;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* 2 biểu đồ trên: tỉ lệ 4:3 */
+.chart-wrapper {
+  aspect-ratio: 4 / 3;
+}
+
+/* Biểu đồ dưới: tỉ lệ rộng hơn 5:2 */
+.chart-wrapper-evolution {
+  aspect-ratio: 5 / 2;
+}
+
+/* Đảm bảo canvas fill hết container */
+.overview-chart-container canvas,
+.gmv-evolution-container canvas {
+  position: absolute;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chartjs-tooltip {
+  opacity: 1;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.chartjs-tooltip-key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
 
 /* ===================== PROFILE ===================== */
 
@@ -836,7 +895,6 @@ body {
   box-shadow: none;
   background: transparent;
 }
-
 
 /* === Cài đặt Lịch Widget === */
 /* Header (Tháng/Năm) */
@@ -956,7 +1014,6 @@ span.flatpickr-weekday {
   outline: none;
   /* Không cần border đỏ nếu là ngày hôm nay */
 }
-
 
 /* === TASK 3: KHU VỰC THÔNG BÁO TASK === */
 .task-notification {
@@ -1107,7 +1164,6 @@ span.flatpickr-weekday {
   font-weight: 500;
 }
 
-
 /* === FIX CURSOR (TỪ CODE CỦA BẠN) === */
 .profile-card .form-control:disabled,
 .profile-card .form-select:disabled,
@@ -1124,4 +1180,157 @@ span.flatpickr-weekday {
 #dob-picker:enabled,
 .input-group:has(#dob-picker:enabled) .profile-input-icon {
   cursor: pointer;
+}
+
+/* ======================================================= */
+/* GROWTH TABLE REDESIGN */
+/* ======================================================= */
+
+/* Căn đều cột, chia đều chiều ngang */
+.growth-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.growth-table th,
+.growth-table td {
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 12px 8px;
+}
+
+.growth-table th {
+  font-weight: 600;
+  color: #1e293b;
+  background-color: #f8fafc;
+  padding: 12px 8px;
+}
+
+.growth-table .sub-header th {
+  background-color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.growth-table tbody tr:nth-child(odd) {
+  background-color: #fafafa;
+}
+
+/* Dịch cột Store sang phải */
+.growth-table th:nth-child(3),
+.growth-table td:nth-child(3) {
+  text-align: center;
+}
+
+.store-name {
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+/* Cúp 1-2-3: thiết kế mới sang trọng hơn */
+.rank-trophy {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  margin: 0 auto; /* Căn giữa trong ô td */
+}
+
+.rank-trophy.gold {
+  background: linear-gradient(145deg, #ffd700, #fbbf24);
+}
+.rank-trophy.silver {
+  background: linear-gradient(145deg, #d4d4d8, #a1a1aa);
+}
+.rank-trophy.bronze {
+  background: linear-gradient(145deg, #cd7f32, #a85b20);
+}
+
+.rank-normal {
+  background: #e2e8f0;
+  color: #475569;
+  width: 36px; /* Tăng bằng với rank-trophy */
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0 auto; /* Căn giữa giống medal */
+}
+
+.value-euro {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 13.5px;
+}
+
+.growth-pct {
+  font-size: 12.5px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.text-success {
+  color: #16a34a !important;
+}
+.text-danger {
+  color: #dc2626 !important;
+}
+
+/* Cân bằng độ rộng các cột */
+.growth-table th:nth-child(1),
+.growth-table td:nth-child(1) {
+  width: 10%;
+}
+
+.growth-table th:nth-child(2),
+.growth-table td:nth-child(2) {
+  width: 10%;
+}
+
+.growth-table th:nth-child(3),
+.growth-table td:nth-child(3) {
+  width: 30%;
+}
+
+.growth-table th:nth-child(4),
+.growth-table td:nth-child(4),
+.growth-table th:nth-child(5),
+.growth-table td:nth-child(5) {
+  width: 25%;
+}
+
+/* TOTAL ROW */
+.table-total {
+  border-top: 2px solid #e2e8f0 !important;
+  background-color: #f8fafc !important;
+}
+.table-total td {
+  font-weight: 600 !important;
+  color: #1d4ed8 !important;
+}
+
+/* SORT ICON */
+.sort-icon {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.sort-icon:hover {
+  color: #1e293b !important;
+}
+.fa-sort-up {
+  color: #16a34a !important;
+}
+.fa-sort-down {
+  color: #dc2626 !important;
 }
