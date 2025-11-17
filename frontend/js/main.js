@@ -1128,7 +1128,7 @@ $(document).ready(function () {
 });
 
 /* ======================================================= */
-/* SALES: GROWTH TABLE - SORT + TOTAL ROW */
+/* SALES */
 /* ======================================================= */
 function initSalesGrowthTable() {
   const dataPath = "../../assets/fake-data/growth-data.txt";
@@ -1321,4 +1321,304 @@ $(document).ready(function () {
   if (window.location.pathname.includes("sales")) {
     initSalesGrowthTable();
   }
+});
+
+/* ======================================================= */
+/* TOP CATEGORY    */
+/* ======================================================= */
+
+function initTopCategory() {
+  if ($("#topCategoryTable").length === 0) return;
+
+  $.get("../../assets/fake-data/top-category-data.txt", function (text) {
+    const lines = text
+      .replace(/^\uFEFF/, "")
+      .replace(/\r\n?/g, "\n")
+      .trim()
+      .split("\n");
+    const $tbody = $("#topCategoryTable tbody");
+    $tbody.empty();
+
+    let data = [];
+    let totalDelta = 0,
+      totalInstore = 0;
+
+    lines.forEach((line) => {
+      if (!line.trim()) return;
+      const c = line.split("|").map((s) => s.trim());
+      if (c.length < 6) return;
+
+      const deltaNum = parseFloat(c[3].replace(/[^\d.-]/g, "")) || 0;
+      const instoreNum = parseFloat(c[5].replace(/[^\d.-]/g, "")) || 0;
+
+      totalDelta += deltaNum;
+      totalInstore += instoreNum;
+
+      data.push({
+        rank: 0,
+        id: c[1],
+        name: c[2], // dùng chung cho Family / Model
+        deltaGMV: c[3],
+        vnGrowth: c[4],
+        instore: c[5],
+        deltaNum,
+        instoreNum,
+      });
+    });
+
+    sortData("delta", false);
+    render();
+
+    function sortData(col, asc) {
+      data.sort((a, b) =>
+        asc ? a[col + "Num"] - b[col + "Num"] : b[col + "Num"] - a[col + "Num"]
+      );
+      data.forEach((r, i) => (r.rank = i + 1));
+    }
+
+    function render() {
+      $tbody.empty();
+
+      // TOTAL ROW – giống hệt Sales
+      $tbody.append(`
+                <tr class="table-total align-middle">
+                    <td></td>
+                    <td class="text-primary fw-bold">Total</td>
+                    <td class="text-primary fw-bold">All Categories</td>
+                    <td class="text-end pe-4"><div class="value-main">${totalDelta.toFixed(
+                      1
+                    )}K pts</div></td>
+                    <td class="text-end pe-4"><div class="value-main">${totalInstore.toLocaleString(
+                      "fr-FR"
+                    )} €</div></td>
+                </tr>
+            `);
+
+      // DATA ROWS
+      data.forEach((r) => {
+        const rankCell =
+          r.rank === 1
+            ? `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`
+            : r.rank === 2
+            ? `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`
+            : r.rank === 3
+            ? `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`
+            : `<div class="rank-normal">${r.rank}</div>`;
+
+        const deltaClass = r.deltaNum > 0 ? "text-success" : "text-danger";
+
+        $tbody.append(`
+                    <tr class="align-middle">
+                        <td class="text-center">${rankCell}</td>
+                        <td class="text-muted fw-medium">${r.id}</td>
+                        <td class="item-name">${r.name}</td>
+                        <td class="text-end pe-4"><div class="value-main ${deltaClass}">${r.deltaGMV}</div></td>
+                        <td class="text-end pe-4"><div class="value-main text-primary">${r.instore}</div></td>
+                    </tr>
+                `);
+      });
+    }
+
+    // Sort events – giống hệt Sales
+    let sortState = { col: "delta", asc: false };
+    function applySort(col) {
+      sortState.asc = sortState.col === col ? !sortState.asc : false;
+      sortState.col = col;
+      sortData(col, sortState.asc);
+      render();
+      $("#topCategoryTable .sort-icon")
+        .removeClass("fa-sort-up fa-sort-down")
+        .addClass("fa-sort");
+      $("#sort-" + col)
+        .removeClass("fa-sort")
+        .addClass(sortState.asc ? "fa-sort-up" : "fa-sort-down");
+    }
+
+    $("#sort-delta, #sort-instore")
+      .off("click")
+      .on("click", function () {
+        applySort(this.id.split("-")[1]);
+      });
+
+    // Mặc định sort Delta giảm dần
+    $("#sort-delta").removeClass("fa-sort").addClass("fa-sort-down");
+
+    // Download CSV
+    $("#downloadCategoryBtn")
+      .off("click")
+      .on("click", function () {
+        let csv = "Rank,ID,Family,Delta GMV,VN Growth,InStore GMV\n";
+        csv += `,Total,All Categories,${totalDelta.toFixed(
+          1
+        )}K pts,,${totalInstore.toLocaleString("fr-FR")} €\n`;
+        data.forEach(
+          (r) =>
+            (csv += `${r.rank},${r.id},${r.name},${r.deltaGMV},${r.vnGrowth},${r.instore}\n`)
+        );
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "top-category-growth.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+  }).fail(function () {
+    $("#topCategoryTable tbody").html(
+      '<tr><td colspan="5" class="text-center text-danger py-5">Không tải được dữ liệu top-category-data.txt</td></tr>'
+    );
+  });
+}
+
+/* ========================================================= */
+/* TOP PRODUCTS     */
+/* ========================================================= */
+function initTopProducts() {
+  if ($("#topProductsTable").length === 0) return;
+
+  $.get("../../assets/fake-data/top-products-data.txt", function (text) {
+    const lines = text
+      .replace(/^\uFEFF/, "")
+      .replace(/\r\n?/g, "\n")
+      .trim()
+      .split("\n");
+    const $tbody = $("#topProductsTable tbody");
+    $tbody.empty();
+
+    let data = [];
+    let totalDelta = 0,
+      totalInstore = 0;
+
+    lines.forEach((line) => {
+      if (!line.trim()) return;
+      const c = line.split("|").map((s) => s.trim());
+      if (c.length < 6) return;
+
+      const deltaNum = parseFloat(c[3].replace(/[^\d.-]/g, "")) || 0;
+      const instoreNum = parseFloat(c[5].replace(/[^\d.-]/g, "")) || 0;
+
+      totalDelta += deltaNum;
+      totalInstore += instoreNum;
+
+      data.push({
+        rank: 0,
+        id: c[1],
+        name: c[2],
+        deltaGMV: c[3],
+        vnGrowth: c[4],
+        instore: c[5],
+        deltaNum,
+        instoreNum,
+      });
+    });
+
+    sortData("delta", false);
+    render();
+
+    function sortData(col, asc) {
+      data.sort((a, b) =>
+        asc ? a[col + "Num"] - b[col + "Num"] : b[col + "Num"] - a[col + "Num"]
+      );
+      data.forEach((r, i) => (r.rank = i + 1));
+    }
+
+    function render() {
+      $tbody.empty();
+
+      $tbody.append(`
+                <tr class="table-total align-middle">
+                    <td></td>
+                    <td class="text-primary fw-bold">Total</td>
+                    <td class="text-primary fw-bold">All Products</td>
+                    <td class="text-end pe-4"><div class="value-main">${totalDelta.toFixed(
+                      2
+                    )} pts</div></td>
+                    <td class="text-end pe-4"><div class="value-main">${totalInstore.toLocaleString(
+                      "fr-FR"
+                    )} €</div></td>
+                </tr>
+            `);
+
+      data.forEach((r) => {
+        const rankCell =
+          r.rank === 1
+            ? `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`
+            : r.rank === 2
+            ? `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`
+            : r.rank === 3
+            ? `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`
+            : `<div class="rank-normal">${r.rank}</div>`;
+
+        const deltaClass = r.deltaNum > 0 ? "text-success" : "text-danger";
+
+        $tbody.append(`
+                    <tr class="align-middle">
+                        <td class="text-center">${rankCell}</td>
+                        <td class="text-muted fw-medium">${r.id}</td>
+                        <td class="item-name">${r.name}</td>
+                        <td class="text-end pe-4"><div class="value-main ${deltaClass}">${r.deltaGMV}</div></td>
+                        <td class="text-end pe-4"><div class="value-main text-primary">${r.instore}</div></td>
+                    </tr>
+                `);
+      });
+    }
+
+    // Sort – giống hệt Category
+    let sortState = { col: "delta", asc: false };
+    function applySort(col) {
+      sortState.asc = sortState.col === col ? !sortState.asc : false;
+      sortState.col = col;
+      sortData(col, sortState.asc);
+      render();
+      $("#topProductsTable .sort-icon")
+        .removeClass("fa-sort-up fa-sort-down")
+        .addClass("fa-sort");
+      $("#topProductsTable #sort-" + col)
+        .removeClass("fa-sort")
+        .addClass(sortState.asc ? "fa-sort-up" : "fa-sort-down");
+    }
+
+    $("#topProductsTable").on(
+      "click",
+      "#sort-delta, #sort-instore",
+      function () {
+        applySort(this.id.split("-")[1]);
+      }
+    );
+
+    $("#topProductsTable #sort-delta")
+      .removeClass("fa-sort")
+      .addClass("fa-sort-down");
+
+    // Download CSV
+    $("#downloadProductBtn")
+      .off("click")
+      .on("click", function () {
+        let csv = "Rank,ID,Model,Delta GMV,VN Growth,InStore GMV\n";
+        csv += `,Total,All Products,${totalDelta.toFixed(
+          2
+        )} pts,,${totalInstore.toLocaleString("fr-FR")} €\n`;
+        data.forEach(
+          (r) =>
+            (csv += `${r.rank},${r.id},${r.name},${r.deltaGMV},${r.vnGrowth},${r.instore}\n`)
+        );
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "top-products-growth.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+  }).fail(function () {
+    $("#topProductsTable tbody").html(
+      '<tr><td colspan="5" class="text-center text-danger py-5">Không tải được dữ liệu top-products-data.txt</td></tr>'
+    );
+  });
+}
+
+// GỌI KHI LOAD TRANG
+$(document).ready(function () {
+  initTopCategory();
+  initTopProducts();
 });
