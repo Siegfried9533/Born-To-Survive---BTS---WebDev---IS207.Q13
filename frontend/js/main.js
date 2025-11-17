@@ -1624,7 +1624,7 @@ $(document).ready(function () {
 });
 
 // =======================================================
-// CUSTOMERS
+// REPORT-CUSTOMERS
 // =======================================================
 function initCustomerEnglish() {
   if ($("#topCustomerTable").length === 0) return;
