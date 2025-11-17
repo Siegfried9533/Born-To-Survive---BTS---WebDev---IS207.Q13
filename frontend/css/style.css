@@ -1657,3 +1657,55 @@ span.flatpickr-weekday {
 .top-growth-table tbody tr:hover {
   background-color: #f1f5f9 !important;
 }
+
+/* ======================================================= */
+/* CUSTOMERS  */
+/* ======================================================= */
+#customerTable th {
+  font-weight: 600;
+  color: #475569;
+  font-size: 13.5px;
+  background-color: #f8fafc;
+}
+
+#customerTable tbody td {
+  padding: 16px 10px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.rank-trophy {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  font-size: 18px;
+  font-weight: bold;
+}
+.gold {
+  background: #fef3c7 !important;
+  color: #d97706 !important;
+}
+.silver {
+  background: #e5e7eb !important;
+  color: #6b7280 !important;
+}
+.bronze {
+  background: #fed7aa !important;
+  color: #c2410c !important;
+}
+.rank-normal {
+  background: #f1f5f9;
+  color: #475569;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  font-weight: 600;
+}

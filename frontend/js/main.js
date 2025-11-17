@@ -1842,9 +1842,140 @@ function initCustomerEnglish() {
     });
 }
 
-// CHẠY KHI VÀO TRANG CUSTOMER
+// CHẠY KHI VÀO TRANG REPORT CUSTOMER
 $(document).ready(function () {
   if (window.location.pathname.includes("customer")) {
     initCustomerEnglish();
   }
+});
+
+// =======================================================
+// CUSTOMERS
+// =======================================================
+const dataPath = "../../assets/fake-data/customers-data.txt";
+
+$.get(dataPath, function (text) {
+  const lines = text.split("\n");
+  const $tbody = $("#customerTable tbody");
+  let data = [];
+  let totalRevenue = 0;
+  let totalOrders = 0;
+
+  // Đọc dữ liệu
+  lines.forEach((line) => {
+    line = line.trim();
+    if (!line || line.startsWith("#")) return;
+    const cols = line.split("|");
+    if (cols.length !== 5) return;
+
+    const revenue = parseInt(cols[3]);
+    const orders = parseInt(cols[4]);
+    totalRevenue += revenue;
+    totalOrders += orders;
+
+    data.push({
+      rank: parseInt(cols[0]),
+      id: cols[1],
+      name: cols[2],
+      revenue: revenue,
+      orders: orders,
+      aov: Math.round(revenue / orders),
+    });
+  });
+
+  // Trạng thái sort hiện tại
+  let currentSort = { col: "revenue", asc: false };
+
+  // Hàm sort + toggle
+  function doSort(col) {
+    const asc = currentSort.col === col ? !currentSort.asc : false;
+    currentSort = { col, asc };
+
+    data.sort((a, b) => (asc ? a[col] - b[col] : b[col] - a[col]));
+    data.forEach((d, i) => (d.rank = i + 1));
+
+    renderData();
+
+    // Cập nhật icon
+    $(".sort-icon").removeClass("fa-sort-up fa-sort-down").addClass("fa-sort");
+    $(`#sort-${col}`)
+      .removeClass("fa-sort")
+      .addClass(asc ? "fa-sort-up" : "fa-sort-down")
+      .css("color", asc ? "#16a34a" : "#dc2626");
+  }
+
+  // Hàm render
+  function renderData() {
+    $tbody.empty();
+    data.forEach((d) => {
+      const rankCell =
+        d.rank === 1
+          ? `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`
+          : d.rank === 2
+          ? `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`
+          : d.rank === 3
+          ? `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`
+          : `<div class="rank-normal">${d.rank}</div>`;
+
+      $tbody.append(`
+                    <tr>
+                        <td class="text-center">${rankCell}</td>
+                        <td class="text-center text-muted small">${d.id}</td>
+                        <td class="ps-3 fw-semibold">${d.name}</td>
+                        <td class="text-end pe-4"><div class="value-euro text-success fw-bold">${d.revenue.toLocaleString(
+                          "vi-VN"
+                        )} ₫</div></td>
+                        <td class="text-end pe-4"><div class="value-euro">${
+                          d.orders
+                        }</div><div class="text-muted small">AOV: ${d.aov.toLocaleString(
+        "vi-VN"
+      )} ₫</div></td>
+                    </tr>
+                `);
+    });
+
+    // Dòng Total
+    $tbody.append(`
+                <tr class="table-total">
+                    <td colspan="3" class="text-center text-primary fw-bold">TOTAL</td>
+                    <td class="text-end pe-4 text-primary fw-bold">${totalRevenue.toLocaleString(
+                      "vi-VN"
+                    )} ₫</td>
+                    <td class="text-end pe-4 text-primary fw-bold">${totalOrders} orders</td>
+                </tr>
+            `);
+  }
+
+  // Gắn sự kiện sort (chỉ gắn 1 lần)
+  $("#sort-revenue")
+    .off("click")
+    .on("click", () => doSort("revenue"));
+  $("#sort-orders")
+    .off("click")
+    .on("click", () => doSort("orders"));
+
+  // Mặc định: Revenue giảm dần
+  doSort("revenue");
+
+  // Download CSV
+  $("#downloadBtn")
+    .off("click")
+    .on("click", () => {
+      let csv = "\uFEFFRank,Customer ID,Name,Revenue,Orders,AOV\n";
+      csv += `,,TOTAL,${totalRevenue},${totalOrders},\n`;
+      data.forEach(
+        (d) =>
+          (csv += `${d.rank},${d.id},${d.name},${d.revenue},${d.orders},${d.aov}\n`)
+      );
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(
+        new Blob([csv], { type: "text/csv;charset=utf-8;" })
+      );
+      a.download = "Top_500_Customers_" + dayjs().format("YYYYMMDD") + ".csv";
+      a.click();
+    });
+}).fail(() => {
+  $("#customerTable tbody").html(
+    `<tr><td colspan="5" class="text-center text-danger py-5">Không tìm thấy file customers.txt</td></tr>`
+  );
 });
