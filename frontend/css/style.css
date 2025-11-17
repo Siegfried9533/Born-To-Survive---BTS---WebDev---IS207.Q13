@@ -1485,3 +1485,175 @@ span.flatpickr-weekday {
 .top-growth-table tbody tr:hover {
   background-color: #f1f5f9 !important;
 }
+
+/* ======================================================= */
+/* CUSTOMER ANALYTICS  */
+/* ======================================================= */
+/* Gender Distribution */
+.gender-doughnut-canvas {
+  width: 240px !important;
+  height: 240px !important;
+  max-width: 280px !important;
+  max-height: 280px !important;
+  min-width: 180px !important;
+  min-height: 180px !important;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Customer Recency (Days Since Last Purchase)  */
+#recencyTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+}
+
+#recencyTable th,
+#recencyTable td {
+  padding: 11px 8px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  border: 1px solid #e2e8f0 !important;
+  white-space: nowrap;
+}
+
+/* Cột đầu tiên */
+#recencyTable th:first-child,
+#recencyTable td:first-child {
+  text-align: left !important;
+  padding-left: 20px !important;
+  width: 220px;
+}
+
+/* Header */
+#recencyTable thead th {
+  background: #f8fafc !important;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* Sub-header */
+#recencyTable .sub-header th {
+  background: #f1f5f9 !important;
+  font-size: 13px;
+}
+
+#recencyTable .total-row td {
+  background: #fefce8 !important;
+  color: #92400e !important;
+  font-weight: 700 !important;
+}
+#recencyTable .inactive-percent-row td {
+  background: #fde68a !important;
+  color: #92400e !important;
+  font-weight: 700 !important;
+}
+#recencyTable .at-risk-row td {
+  background: #fecaca !important;
+  color: #991b1b !important;
+  font-weight: 700 !important;
+}
+
+/*New Customer Segments & Purchase Frequency Analysis */
+#newCustomerTable tbody tr,
+#frequencyTable tbody tr {
+  height: 58px !important;
+  min-height: 58px !important;
+}
+
+#frequencyTable th:nth-child(1),
+#frequencyTable td:nth-child(1) {
+  width: 100px !important;
+  min-width: 100px !important;
+  white-space: nowrap !important;
+}
+
+#frequencyTable th:nth-child(2),
+#frequencyTable td:nth-child(2) {
+  width: 110px !important;
+  min-width: 110px !important;
+  white-space: nowrap !important;
+}
+
+#frequencyTable th:nth-child(n + 3),
+#frequencyTable td:nth-child(n + 3) {
+  white-space: nowrap !important;
+}
+
+#newCustomerTable thead th,
+#frequencyTable thead th {
+  height: 52px !important;
+  padding: 14px 12px !important;
+  vertical-align: middle !important;
+}
+
+#newCustomerTable tbody td,
+#frequencyTable tbody td {
+  padding: 12px 12px !important;
+  vertical-align: middle !important;
+}
+
+#newCustomerTable,
+#newCustomerTable thead th,
+#newCustomerTable tbody td {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+#newCustomerTable th:nth-child(1),
+#newCustomerTable td:nth-child(1) {
+  width: 50% !important; /* cột Segment – rộng nhất */
+  text-align: left !important;
+  padding-left: 20px !important;
+}
+
+#newCustomerTable th:nth-child(2),
+#newCustomerTable td:nth-child(2) {
+  width: 25% !important; /* cột Count */
+  text-align: center !important;
+}
+
+#newCustomerTable th:nth-child(3),
+#newCustomerTable td:nth-child(3) {
+  width: 25% !important;
+  text-align: center !important;
+}
+
+/* Đảm bảo không xuống dòng + căn giữa đẹp */
+#newCustomerTable th,
+#newCustomerTable td {
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tăng độ cao hàng cho đẹp (đồng bộ với bảng bên cạnh) */
+#newCustomerTable tbody tr {
+  height: 58px !important;
+}
+
+.download-btn:hover {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Highlight rows */
+#recencyTable .highlight {
+  background: linear-gradient(to right, #fffbeb, #fef3c7) !important;
+}
+#recencyTable .at-risk {
+  background: linear-gradient(to right, #fee2e2, #fecaca) !important;
+  color: #991b1b;
+}
+
+.top-growth-table th,
+.top-growth-table td {
+  vertical-align: middle !important;
+  padding: 12px 8px;
+}
+.top-growth-table tbody tr:hover {
+  background-color: #f1f5f9 !important;
+}

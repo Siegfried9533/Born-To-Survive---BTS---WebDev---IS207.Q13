@@ -1471,7 +1471,7 @@ function initTopCategory() {
 }
 
 /* ========================================================= */
-/* TOP PRODUCTS     */
+/* TOP PRODUCTS  */
 /* ========================================================= */
 function initTopProducts() {
   if ($("#topProductsTable").length === 0) return;
@@ -1621,4 +1621,230 @@ function initTopProducts() {
 $(document).ready(function () {
   initTopCategory();
   initTopProducts();
+});
+
+// =======================================================
+// CUSTOMERS
+// =======================================================
+function initCustomerEnglish() {
+  if ($("#topCustomerTable").length === 0) return;
+
+  const today = dayjs();
+  $("#last-update").text(today.format("MMM DD, YYYY HH:mm"));
+
+  // ==================== DỮ LIỆU GIẢ ĐẦY ĐỦ ====================
+  const TOTAL_CUSTOMERS = 15211;
+  const EVER_PURCHASED = 9876;
+  const NEW_CUSTOMERS = 2134;
+
+  const INACTIVE = { 30: 3124, 60: 1856, 90: 987, plus: 2909 };
+
+  // Customer Overview
+  $("#total-customers").text(TOTAL_CUSTOMERS.toLocaleString());
+  $("#ever-purchased").text(EVER_PURCHASED.toLocaleString());
+  $("#new-customers").text(NEW_CUSTOMERS.toLocaleString());
+  $("#bar-purchased").css(
+    "width",
+    ((EVER_PURCHASED / TOTAL_CUSTOMERS) * 100).toFixed(1) + "%"
+  );
+  $("#bar-new").css(
+    "width",
+    ((NEW_CUSTOMERS / TOTAL_CUSTOMERS) * 100).toFixed(1) + "%"
+  );
+
+  // Gender Chart
+  new Chart($("#genderChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Male", "Female", "Unknown"],
+      datasets: [
+        {
+          data: [9482, 5644, 85],
+          backgroundColor: ["#3b82f6", "#ec4899", "#9ca3af"],
+          borderWidth: 3,
+          borderColor: "#fff",
+        },
+      ],
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      cutout: "70%",
+      plugins: { legend: { display: false } },
+    },
+  });
+
+  // Recency Table
+  $("#recencyTable").html(`
+    <thead>
+        <tr class="table-light">
+            <th rowspan="2" class="text-start">Purchase Cycle</th>
+            <th colspan="4" class="sub-header">Days Since Last Purchase</th>
+            <th rowspan="2">Total</th>
+            <th rowspan="2">% Inactive Customers</th>
+        </tr>
+        <tr class="table-light">
+            <th>1–30 days</th>
+            <th>31–60 days</th>
+            <th>61–90 days</th>
+            <th>>90 days</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="text-start fw-bold">Inactive Customers</td>
+            <td>3,124</td>
+            <td>1,856</td>
+            <td>987</td>
+            <td>2,909</td>
+            <td class="fw-bold">8,876</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td class="text-start">1–30 days</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td>
+            <td>0</td><td>0%</td>
+        </tr>
+        <tr>
+            <td class="text-start">31–60 days</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td>
+            <td>0</td><td>0%</td>
+        </tr>
+        <tr>
+            <td class="text-start">61–90 days</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td>
+            <td>0</td><td>0%</td>
+        </tr>
+        <tr>
+            <td class="text-start">>90 days</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td>
+            <td>0</td><td>0%</td>
+        </tr>
+        <tr class="total-row">
+            <td class="text-start fw-bold">Total</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td>
+            <td class="fw-bold">0</td><td>0%</td>
+        </tr>
+        <tr class="inactive-percent-row">
+            <td class="text-start fw-bold">% Inactive Over Time</td>
+            <td>0%</td><td>0%</td><td>0%</td><td>0%</td>
+            <td class="fw-bold">100%</td><td></td>
+        </tr>
+        <tr class="at-risk-row">
+            <td class="text-start fw-bold">At Risk / Lost Customers</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td>
+            <td class="fw-bold">0 (0%)</td><td></td>
+        </tr>
+    </tbody>
+`);
+
+  // New Customer Segments
+  $("#newCustomerTable").html(`
+        <thead class="table-light"><tr><th>Segment</th><th class="text-center">Count</th><th class="text-center">% of Total</th></tr></thead>
+        <tbody>
+            <tr><td>First-time Buyer</td><td class="text-center">892</td><td class="text-center">5.9%</td></tr>
+            <tr><td>New Card Created</td><td class="text-center">213</td><td class="text-center">1.4%</td></tr>
+            <tr><td>One-time Buyer</td><td class="text-center">1,029</td><td class="text-center">6.8%</td></tr>
+            <tr><td>Repeat Buyer (2+)</td><td class="text-center">487</td><td class="text-center">3.2%</td></tr>
+            <tr><td>Dormant New Customers</td><td class="text-center">1,412</td><td class="text-center">9.3%</td></tr>
+        </tbody>
+    `);
+
+  // Purchase Frequency
+  $("#frequencyTable").html(`
+        <thead class="table-light">
+            <tr><th>Orders</th><th class="text-center">Customers</th><th class="text-center">% Customers</th><th class="text-end">Revenue</th><th class="text-center">% Revenue</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>1 order</td><td class="text-center">4,821</td><td class="text-center">48.8%</td><td class="text-end">0 ₫</td><td class="text-center">0%</td></tr>
+            <tr><td>2 orders</td><td class="text-center">2,156</td><td class="text-center">21.8%</td><td class="text-end">0 ₫</td><td class="text-center">0%</td></tr>
+            <tr><td>3 orders</td><td class="text-center">987</td><td class="text-center">10.0%</td><td class="text-end">0 ₫</td><td class="text-center">0%</td></tr>
+            <tr><td>4+ orders</td><td class="text-center">1,912</td><td class="text-center">19.4%</td><td class="text-end">0 ₫</td><td class="text-center">0%</td></tr>
+        </tbody>
+    `);
+
+  // Top Customers
+  const top10 = [
+    ["C001234", "John Smith", "12.4M ₫", 48],
+    ["C005678", "Emma Wilson", "11.8M ₫", 42],
+    ["C009012", "Michael Brown", "10.9M ₫", 39],
+    ["C003456", "Sarah Davis", "9.7M ₫", 35],
+    ["C007890", "James Lee", "8.9M ₫", 33],
+    ["C002345", "Olivia Martinez", "8.5M ₫", 31],
+    ["C006789", "William Garcia", "8.1M ₫", 30],
+    ["C004567", "Sophia Rodriguez", "7.8M ₫", 29],
+    ["C008901", "Daniel Hernandez", "7.5M ₫", 28],
+    ["C001357", "Isabella Lopez", "7.2M ₫", 27],
+  ];
+
+  const $tbody = $("#topCustomerTable tbody");
+  $tbody.empty();
+  top10.forEach((c, i) => {
+    const rank = i + 1;
+    const medal =
+      rank === 1
+        ? `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`
+        : rank === 2
+        ? `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`
+        : rank === 3
+        ? `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`
+        : `<div class="rank-normal">${rank}</div>`;
+
+    $tbody.append(`
+            <tr class="align-middle">
+                <td class="text-center">${medal}</td>
+                <td class="text-muted small">${c[0]}</td>
+                <td class="item-name">${c[1]}</td>
+                <td class="text-end pe-4"><div class="value-main text-success">${c[2]}</div></td>
+                <td class="text-end pe-4"><div class="value-main">${c[3]}</div></td>
+            </tr>
+        `);
+  });
+
+  // ==================== NÚT DOWNLOAD CSV  ====================
+  $(".download-btn")
+    .off("click")
+    .on("click", function (e) {
+      e.preventDefault();
+      const type = $(this).data("target");
+      let csvContent = "";
+      let filename = "export.csv";
+
+      if (type === "recency") {
+        csvContent = `Purchase Cycle,1-30 days,31-60 days,61-90 days,>90 days,Total,% Inactive\nInactive Customers,3124,1856,987,2909,8876,\nRepeat Rate,,,,,68.2%\nAt Risk / Lost,,,,,9.3%`;
+        filename = "Customer_Recency.csv";
+      } else if (type === "top-customers") {
+        csvContent = "Rank,Customer ID,Customer Name,Revenue,Orders\n";
+        $("#topCustomerTable tbody tr").each(function (i) {
+          const rank = i + 1;
+          const cells = $(this).find("td");
+          csvContent += `${rank},${cells.eq(1).text()},${cells
+            .eq(2)
+            .text()},${cells.eq(3).text().trim()},${cells
+            .eq(4)
+            .text()
+            .trim()}\n`;
+        });
+        filename = "Top_Customers.csv";
+      }
+      // Bạn có thể thêm các case khác (overview, gender, frequency...) nếu cần
+
+      const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const link = document.createElement("a");
+      link.setAttribute("href", URL.createObjectURL(blob));
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+}
+
+// CHẠY KHI VÀO TRANG CUSTOMER
+$(document).ready(function () {
+  if (window.location.pathname.includes("customer")) {
+    initCustomerEnglish();
+  }
 });
