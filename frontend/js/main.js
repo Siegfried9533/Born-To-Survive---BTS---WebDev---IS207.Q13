@@ -1979,3 +1979,322 @@ $.get(dataPath, function (text) {
     `<tr><td colspan="5" class="text-center text-danger py-5">Không tìm thấy file customers.txt</td></tr>`
   );
 });
+
+
+// TOP-STORES
+$(document).ready(function () {
+    const $tbody = $("#storesTable tbody");
+    const dataPath = "../../assets/fake-data/stores-data.txt";
+    let data = [];
+    let currentSort = { col: "allCat", asc: false };
+
+    // 1. Load dữ liệu từ txt
+    $.get(dataPath, function (text) {
+        const lines = text.trim().split("\n");
+
+        lines.forEach(line => {
+            const cols = line.split(",");
+            if (cols.length < 9) return;
+            data.push({
+                id: cols[0].trim(),
+                name: cols[1].trim(),
+                city: cols[2].trim(),
+                country: cols[3].trim(),
+                zip: cols[4].trim(),
+                lat: parseFloat(cols[5]),
+                lng: parseFloat(cols[6]),
+                catSelected: parseInt(cols[7]),
+                allCat: parseInt(cols[8])
+            });
+        });
+
+        sortAndRender(currentSort.col, currentSort.asc);
+    }).fail(() => {
+        $tbody.html(`
+            <tr>
+                <td colspan="10" class="text-center text-danger">
+                    Không tải được file stores.txt
+                </td>
+            </tr>
+        `);
+    });
+
+    // 2. Hàm sort + render
+    function sortAndRender(column, asc) {
+        // Sort dữ liệu theo cột
+        data.sort((a, b) => asc ? a[column] - b[column] : b[column] - a[column]);
+
+        // Tính rank theo allCat
+        const ranked = [...data]
+            .sort((a, b) => b.allCat - a.allCat)
+            .map((d, i) => ({ id: d.id, rank: i + 1 }));
+
+        $tbody.empty();
+
+        data.forEach(d => {
+            const rank = ranked.find(r => r.id === d.id).rank;
+            const row = `
+                <tr>
+                    <td class="text-center">${rank}</td>
+                    <td class="text-center">${d.id}</td>
+                    <td>${d.name}</td>
+                    <td>${d.city}</td>
+                    <td>${d.country}</td>
+                    <td>${d.zip}</td>
+                    <td>${d.lat}</td>
+                    <td>${d.lng}</td>
+                    <td class="text-end pe-4 sortable" data-col="catSelected">${d.catSelected}</td>
+                    <td class="text-end pe-4 sortable" data-col="allCat">${d.allCat}</td>
+                </tr>
+            `;
+            $tbody.append(row);
+        });
+
+        // Xóa mũi tên cũ
+        $("#storesTable thead th .sort-arrow").text("");
+
+        // Cập nhật mũi tên mới
+        $(`#storesTable thead th[data-col="${column}"] .sort-arrow`)
+            .text(asc ? "▲" : "▼");
+    }
+
+    // 3. Event click sort
+    $("#storesTable thead").on("click", ".sortable", function () {
+        const col = $(this).data("col");
+
+        if (currentSort.col === col)
+            currentSort.asc = !currentSort.asc;
+        else
+            currentSort = { col: col, asc: true };
+
+        sortAndRender(currentSort.col, currentSort.asc);
+    });
+});
+
+// === Revenue Report JS (main.js) ===
+$(document).ready(function() {
+    const revenueTable = $('#revenueTable tbody');
+    const viewModeSelect = $('#viewMode');
+    let chartLine, chartBar, chartPie;
+
+    const today = new Date();
+    const revenueData = [];
+
+    // Tạo dữ liệu 6 tháng gần đây
+    for(let m = 0; m < 6; m++) {
+        const month = new Date(today.getFullYear(), today.getMonth() - m, 1);
+        for(let i = 1; i <= 5; i++) {
+            revenueData.push({
+                date: new Date(month.getFullYear(), month.getMonth(), i).toISOString().slice(0,10),
+                storeId: `S0${i}`,
+                name: `Store ${String.fromCharCode(64+i)}`,
+                country: i % 2 === 0 ? 'UK' : 'USA',
+                revenue: Math.floor(Math.random() * 15000 + 5000),
+                growth: Math.floor(Math.random() * 20 - 10),
+                category: ['Electronics','Clothing','Home'][i % 3]
+            });
+        }
+    }
+
+    function renderTable(data) {
+        revenueTable.empty();
+        data.forEach(d => {
+            const growthClass = d.growth >= 0 ? 'text-success' : 'text-danger';
+            revenueTable.append(`
+                <tr>
+                    <td>${d.date}</td>
+                    <td>$${d.revenue.toLocaleString()}</td>
+                    <td class='${growthClass}'>${d.growth}%</td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderCharts(data) {
+        // --- Revenue Trend (Line chart 7 ngày trong tuần) ---
+        const day = today.getDay();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+        const weekDates = [];
+        for(let i = 0; i < 7; i++) {
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
+            weekDates.push(d.toISOString().slice(0,10));
+        }
+        const weeklyRevenue = weekDates.map(date => {
+            const dayData = data.filter(d => d.date === date);
+            return dayData.length ? dayData.reduce((sum,x)=>sum+x.revenue,0) : Math.floor(Math.random()*15000+5000);
+        });
+        const ctxLine = document.getElementById('lineChart').getContext('2d');
+        if(chartLine) chartLine.destroy();
+        chartLine = new Chart(ctxLine, {
+            type: 'line',
+            data: {
+                labels: weekDates,
+                datasets: [{
+                    label: 'Revenue',
+                    data: weeklyRevenue,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0,123,255,0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointStyle: 'circle',
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: true } } }
+        });
+
+        // --- Revenue Comparison (6 tháng gần đây) ---
+        const monthLabels = [];
+        const monthlyRevenue = [];
+        for(let m = 5; m >= 0; m--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - m, 1);
+            const monthKey = d.toISOString().slice(0,7);
+            monthLabels.push(monthKey);
+            const monthTotal = data.filter(x=>x.date.slice(0,7)===monthKey).reduce((sum,x)=>sum+x.revenue,0);
+            monthlyRevenue.push(monthTotal);
+        }
+
+        // Fake growth so với cùng kỳ năm trước
+        const monthlyRevenuePrev = monthlyRevenue.map(x => x * (Math.random() * 0.3 + 0.85));
+        const growthPercent = monthlyRevenue.map((val,i) => monthlyRevenuePrev[i] ? ((val - monthlyRevenuePrev[i])/monthlyRevenuePrev[i]*100).toFixed(1) : 0);
+
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        if(chartBar) chartBar.destroy();
+        chartBar = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: monthLabels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Growth (%) vs Last Year',
+                        data: growthPercent,
+                        backgroundColor: '#f46505ff',
+                        borderColor: '#f4a005',
+                        borderWidth: 2,
+                        fill: false,
+                        yAxisID: 'y1',
+                        order: 1,
+                        tension: 0.4,
+                        pointStyle: 'circle',
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Monthly Revenue',
+                        data: monthlyRevenue,
+                        backgroundColor: '#4b50ea',
+                        order: 2,
+                        borderRadius: 8,
+                        barPercentage: 0.5,
+                        categoryPercentage: 0.6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { beginAtZero: true, title: { display:true, text:'Revenue ($)' } },
+                    y1: {
+                        position: 'right',
+                        ticks: { callback: val => val + '%' },
+                        title: { display:true, text:'Growth (%)' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // --- Pie chart ---
+        const categories = [...new Set(data.map(d=>d.category))];
+        const categorySums = categories.map(c => data.filter(d=>d.category===c).reduce((sum,x)=>sum+x.revenue,0));
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        if(chartPie) chartPie.destroy();
+        chartPie = new Chart(ctxPie, {
+            type: 'pie',
+            data: { 
+                labels: categories, 
+                datasets: [{
+                    data: categorySums, 
+                    backgroundColor: ['#007bff','#28a745','#dc3545','#ffc107'],
+                    hoverOffset: 10
+                }] 
+            },
+            options: { 
+                responsive:true, 
+                maintainAspectRatio:false, 
+                plugins:{legend:{position:'bottom'}}
+            }
+        });
+        $('#pieChart').css('max-height','300px');
+    }
+
+    function updateReport() {
+        const mode = viewModeSelect.val();
+        let filteredData = [...revenueData];
+        renderTable(filteredData);
+        renderCharts(filteredData);
+
+        // Tổng doanh thu
+        const totalRevenue = filteredData.reduce((sum,d)=>sum+d.revenue,0);
+        $('#sumRevenue').text(`$${totalRevenue.toLocaleString()}`);
+
+        // Tính growth theo mode
+        let growth = 0;
+        if(mode==='daily'){
+            const todayStr = today.toISOString().slice(0,10);
+            const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
+            const yesterdayStr = yesterday.toISOString().slice(0,10);
+            const todayRevenue = filteredData.filter(d=>d.date===todayStr).reduce((s,x)=>s+x.revenue,0);
+            const yesterdayRevenue = filteredData.filter(d=>d.date===yesterdayStr).reduce((s,x)=>s+x.revenue,0);
+            growth = yesterdayRevenue ? ((todayRevenue - yesterdayRevenue)/yesterdayRevenue*100) : 0;
+        } else if(mode==='weekly'){
+            const day = today.getDay();
+            const monday = new Date(today); monday.setDate(today.getDate()-(day===0?6:day-1));
+            const lastMonday = new Date(monday); lastMonday.setDate(monday.getDate()-7);
+            let thisWeek=0,lastWeek=0;
+            for(let i=0;i<7;i++){
+                const d1 = new Date(monday); d1.setDate(monday.getDate()+i);
+                const d2 = new Date(lastMonday); d2.setDate(lastMonday.getDate()+i);
+                const str1 = d1.toISOString().slice(0,10);
+                const str2 = d2.toISOString().slice(0,10);
+                thisWeek += filteredData.filter(d=>d.date===str1).reduce((s,x)=>s+x.revenue,0);
+                lastWeek += filteredData.filter(d=>d.date===str2).reduce((s,x)=>s+x.revenue,0);
+            }
+            growth = lastWeek ? ((thisWeek-lastWeek)/lastWeek*100) : 0;
+        } else if(mode==='monthly'){
+            const thisMonth = today.toISOString().slice(0,7);
+            const lastMonthDate = new Date(today.getFullYear(), today.getMonth()-1,1);
+            const lastMonth = lastMonthDate.toISOString().slice(0,7);
+            const thisMonthRevenue = filteredData.filter(d=>d.date.slice(0,7)===thisMonth).reduce((s,x)=>s+x.revenue,0);
+            const lastMonthRevenue = filteredData.filter(d=>d.date.slice(0,7)===lastMonth).reduce((s,x)=>s+x.revenue,0);
+            growth = lastMonthRevenue ? ((thisMonthRevenue-lastMonthRevenue)/lastMonthRevenue*100) :0;
+        } else if(mode==='yearly'){
+            const thisYear = today.getFullYear();
+            const lastYear = thisYear-1;
+            const thisYearRevenue = filteredData.filter(d=>new Date(d.date).getFullYear()===thisYear).reduce((s,x)=>s+x.revenue,0);
+            const lastYearRevenue = filteredData.filter(d=>new Date(d.date).getFullYear()===lastYear).reduce((s,x)=>s+x.revenue,0);
+            growth = lastYearRevenue ? ((thisYearRevenue-lastYearRevenue)/lastYearRevenue*100) : 0;
+        }
+
+        const growthText = `${growth>=0?'+':''}${growth.toFixed(1)}%`;
+        const growthClass = growth>=0?'text-success':'text-danger';
+        $('#monthlyGrowth')
+            .text(growthText)
+            .removeClass('text-success text-danger')
+            .addClass(growthClass);
+        let labelText = mode.charAt(0).toUpperCase() + mode.slice(1) + ' Growth';
+        $('#monthlyGrowth').prev('h6').text(labelText);
+
+        // Active stores
+        $('#activeStores').text(filteredData.length);
+    }
+
+    viewModeSelect.on('change', updateReport);
+    updateReport();
+});

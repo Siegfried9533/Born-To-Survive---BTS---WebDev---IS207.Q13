@@ -1709,3 +1709,134 @@ span.flatpickr-weekday {
   margin: 0 auto;
   font-weight: 600;
 }
+
+
+/* Cân bằng độ rộng các cột */
+.growth-table th:nth-child(1),
+.growth-table td:nth-child(1) {
+  width: 10%;
+}
+
+.growth-table th:nth-child(2),
+.growth-table td:nth-child(2) {
+  width: 10%;
+}
+
+.growth-table th:nth-child(3),
+.growth-table td:nth-child(3) {
+  width: 30%;
+}
+
+.growth-table th:nth-child(4),
+.growth-table td:nth-child(4),
+.growth-table th:nth-child(5),
+.growth-table td:nth-child(5) {
+  width: 25%;
+}
+
+/* TOTAL ROW */
+.table-total {
+  border-top: 2px solid #e2e8f0 !important;
+  background-color: #f8fafc !important;
+}
+.table-total td {
+  font-weight: 600 !important;
+  color: #1d4ed8 !important;
+}
+
+/* SORT ICON */
+.sort-icon {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.sort-icon:hover {
+  color: #1e293b !important;
+}
+.fa-sort-up {
+  color: #16a34a !important;
+}
+.fa-sort-down {
+  color: #dc2626 !important;
+}
+
+/* === Revenue Report Styles === */
+
+/* SUMMARY CARDS */
+.summary-card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 0.5rem rgba(0,0,0,0.1);
+    padding: 1rem;
+    text-align: center;
+    transition: transform 0.2s;
+}
+.summary-card:hover {
+    transform: translateY(-3px);
+}
+.summary-card h6 {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+.summary-card .summary-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+.summary-value.text-success { color: #28a745; }
+.summary-value.text-danger { color: #dc3545; }
+
+/* CHART CARDS */
+.chart-card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 0.5rem rgba(0,0,0,0.1);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.chart-card h5 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+}
+.chart-card canvas {
+    width: 100% !important;
+    height: 250px;
+}
+
+/* CHART GRID */
+.chart-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.chart-grid .chart-card {
+    flex: 1 1 300px;
+}
+
+/* TABLE REVENUE */
+.growth-table thead {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+.growth-table th, .growth-table td {
+    vertical-align: middle;
+    text-align: center;
+    padding: 0.75rem;
+}
+.growth-table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .chart-grid { display: block; }
+    .chart-card { margin-bottom: 1rem; }
+}
+
+/* DOWNLOAD BUTTON */
+#downloadBtn i { font-size: 0.9rem; }
+
+/* VIEW MODE SELECT */
+#viewMode { min-width: 120px; }
+
+/* FOOTER */
+#app-footer { margin-top: 2rem; }
