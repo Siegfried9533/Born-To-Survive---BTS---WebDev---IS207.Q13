@@ -303,6 +303,16 @@ body {
   max-height: 500px;
 }
 
+#sidebar {
+  overflow-y: scroll;
+  scrollbar-width: none; /* Firefox */
+}
+
+#sidebar::-webkit-scrollbar {
+  /* Chrome, Edge, Safari */
+  display: none;
+}
+
 /* ===================== APP-HEADER ===================== */
 #app-header .overview-banner {
   padding: 24px;
@@ -1710,7 +1720,6 @@ span.flatpickr-weekday {
   font-weight: 600;
 }
 
-
 /* Cân bằng độ rộng các cột */
 .growth-table th:nth-child(1),
 .growth-table td:nth-child(1) {
@@ -1759,84 +1768,185 @@ span.flatpickr-weekday {
   color: #dc2626 !important;
 }
 
-/* === Revenue Report Styles === */
-
+/* ======================================================= */
+/* REPORT-REVENUES */
+/* ======================================================= */
 /* SUMMARY CARDS */
 .summary-card {
-    background-color: #fff;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.15rem 0.5rem rgba(0,0,0,0.1);
-    padding: 1rem;
-    text-align: center;
-    transition: transform 0.2s;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  text-align: center;
+  transition: transform 0.2s;
 }
 .summary-card:hover {
-    transform: translateY(-3px);
+  transform: translateY(-3px);
 }
 .summary-card h6 {
-    font-size: 0.9rem;
-    color: #6c757d;
+  font-size: 0.9rem;
+  color: #6c757d;
 }
 .summary-card .summary-value {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-top: 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
 }
-.summary-value.text-success { color: #28a745; }
-.summary-value.text-danger { color: #dc3545; }
+.summary-value.text-success {
+  color: #28a745;
+}
+.summary-value.text-danger {
+  color: #dc3545;
+}
 
 /* CHART CARDS */
 .chart-card {
-    background-color: #fff;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.15rem 0.5rem rgba(0,0,0,0.1);
-    padding: 1rem;
-    margin-bottom: 1rem;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  margin-bottom: 1rem;
 }
 .chart-card h5 {
-    font-size: 1rem;
-    margin-bottom: 0.75rem;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
 }
 .chart-card canvas {
-    width: 100% !important;
-    height: 250px;
+  width: 100% !important;
+  height: 250px;
 }
 
 /* CHART GRID */
 .chart-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 .chart-grid .chart-card {
-    flex: 1 1 300px;
+  flex: 1 1 300px;
 }
 
 /* TABLE REVENUE */
 .growth-table thead {
-    background-color: #f8f9fa;
-    font-weight: 600;
+  background-color: #f8f9fa;
+  font-weight: 600;
 }
-.growth-table th, .growth-table td {
-    vertical-align: middle;
-    text-align: center;
-    padding: 0.75rem;
+.growth-table th,
+.growth-table td {
+  vertical-align: middle;
+  text-align: center;
+  padding: 0.75rem;
 }
 .growth-table tbody tr:hover {
-    background-color: #f1f3f5;
+  background-color: #f1f3f5;
 }
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
-    .chart-grid { display: block; }
-    .chart-card { margin-bottom: 1rem; }
+  .chart-grid {
+    display: block;
+  }
+  .chart-card {
+    margin-bottom: 1rem;
+  }
 }
 
 /* DOWNLOAD BUTTON */
-#downloadBtn i { font-size: 0.9rem; }
+#downloadBtn i {
+  font-size: 0.9rem;
+}
 
 /* VIEW MODE SELECT */
-#viewMode { min-width: 120px; }
+#viewMode {
+  min-width: 120px;
+}
 
 /* FOOTER */
-#app-footer { margin-top: 2rem; }
+#app-footer {
+  margin-top: 2rem;
+}
+
+/* ======================================================= */
+/* REPORT-SALES */
+/* ======================================================= */
+.card-custom {
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  background: white;
+  padding: 30px;
+  width: 350px;
+  /* Độ rộng thẻ */
+}
+
+.gauge-container {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  /* Chiều cao bằng 1/2 chiều rộng + padding */
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  /* Ẩn phần thừa nếu có */
+}
+
+/* SVG Styling */
+.gauge-svg {
+  width: 100%;
+  height: auto;
+  transform: rotate(0deg);
+  /* Đảm bảo không bị xoay lệch */
+}
+
+/* Đường nền (Track) */
+.gauge-bg {
+  fill: none;
+  stroke: #e9ecef;
+  /* Màu xám nhạt cho phần chưa đạt */
+  stroke-width: 20;
+  /* Độ dày của đường */
+  stroke-linecap: round;
+  /* Bo tròn đầu */
+}
+
+/* Đường tiến độ (Progress) */
+.gauge-progress {
+  fill: none;
+  stroke: url(#gradientColor);
+  /* Dùng Gradient định nghĩa trong HTML */
+  stroke-width: 20;
+  stroke-linecap: round;
+  /* Bo tròn đầu */
+  transition: stroke-dashoffset 1.5s ease-out;
+  /* Hiệu ứng chạy mượt */
+}
+
+/* Text hiển thị */
+.gauge-info {
+  text-align: center;
+  margin-top: -40px;
+  /* Kéo text lên lồng vào cung tròn */
+  position: relative;
+  z-index: 10;
+}
+
+.percent-text {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #198754;
+  /* Màu xanh lá đậm (Bootstrap success darken) */
+  line-height: 1;
+}
+
+.sub-text {
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 5px;
+}
+
+.card-title {
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 20px;
+}

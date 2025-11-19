@@ -1980,321 +1980,661 @@ $.get(dataPath, function (text) {
   );
 });
 
-
+// =======================================================
 // TOP-STORES
+// =======================================================
 $(document).ready(function () {
-    const $tbody = $("#storesTable tbody");
-    const dataPath = "../../assets/fake-data/stores-data.txt";
-    let data = [];
-    let currentSort = { col: "allCat", asc: false };
+  const $tbody = $("#storesTable tbody");
+  const dataPath = "../../assets/fake-data/stores-data.txt";
+  let data = [];
+  let currentSort = { col: "allCat", asc: false };
 
-    // 1. Load dữ liệu từ txt
-    $.get(dataPath, function (text) {
-        const lines = text.trim().split("\n");
+  // ============= CSS CHO HUY CHƯƠNG (chỉ cần 1 lần) =============
+  const medalStyle = `
+    <style>
+      .rank-trophy { font-size: 1.5rem; line-height: 1; }
+      .rank-trophy.gold i   { color: #FFD700; text-shadow: 0 0 12px rgba(255,215,0,0.7); }
+      .rank-trophy.silver i { color: #C0C0C0; text-shadow: 0 0 12px rgba(192,192,192,0.7); }
+      .rank-trophy.bronze i { color: #CD7F32; text-shadow: 0 0 12px rgba(205,127,50,0.7); }
+      .rank-normal { 
+        text-align: center; 
+        font-weight: 600; 
+        color: #495057; 
+        font-size: 1.1rem;
+      }
+    </style>
+  `;
+  $("head").append(medalStyle);
 
-        lines.forEach(line => {
-            const cols = line.split(",");
-            if (cols.length < 9) return;
-            data.push({
-                id: cols[0].trim(),
-                name: cols[1].trim(),
-                city: cols[2].trim(),
-                country: cols[3].trim(),
-                zip: cols[4].trim(),
-                lat: parseFloat(cols[5]),
-                lng: parseFloat(cols[6]),
-                catSelected: parseInt(cols[7]),
-                allCat: parseInt(cols[8])
-            });
-        });
-
-        sortAndRender(currentSort.col, currentSort.asc);
-    }).fail(() => {
-        $tbody.html(`
-            <tr>
-                <td colspan="10" class="text-center text-danger">
-                    Không tải được file stores.txt
-                </td>
-            </tr>
-        `);
+  // ============= LOAD DỮ LIỆU =============
+  $.get(dataPath, function (text) {
+    const lines = text.trim().split("\n");
+    lines.forEach((line) => {
+      const cols = line.split(",");
+      if (cols.length < 9) return;
+      data.push({
+        id: cols[0].trim(),
+        name: cols[1].trim(),
+        city: cols[2].trim(),
+        country: cols[3].trim(),
+        zip: cols[4].trim(),
+        lat: parseFloat(cols[5]),
+        lng: parseFloat(cols[6]),
+        catSelected: parseInt(cols[7]),
+        allCat: parseInt(cols[8]),
+      });
     });
 
-    // 2. Hàm sort + render
-    function sortAndRender(column, asc) {
-        // Sort dữ liệu theo cột
-        data.sort((a, b) => asc ? a[column] - b[column] : b[column] - a[column]);
+    sortAndRender(currentSort.col, currentSort.asc);
+  }).fail(() => {
+    $tbody.html(
+      `<tr><td colspan="10" class="text-center text-danger">Không tải được file stores.txt</td></tr>`
+    );
+  });
 
-        // Tính rank theo allCat
-        const ranked = [...data]
-            .sort((a, b) => b.allCat - a.allCat)
-            .map((d, i) => ({ id: d.id, rank: i + 1 }));
+  // ============= HÀM TẠO HUY CHƯƠNG =============
+  function getRankMedal(rank) {
+    if (rank === 1)
+      return `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`;
+    if (rank === 2)
+      return `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`;
+    if (rank === 3)
+      return `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`;
+    return `<div class="rank-normal">${rank}</div>`;
+  }
 
-        $tbody.empty();
+  // ============= SORT + RENDER =============
+  function sortAndRender(column, asc) {
+    // Sort dữ liệu hiện tại
+    data.sort((a, b) => (asc ? a[column] - b[column] : b[column] - a[column]));
 
-        data.forEach(d => {
-            const rank = ranked.find(r => r.id === d.id).rank;
-            const row = `
-                <tr>
-                    <td class="text-center">${rank}</td>
-                    <td class="text-center">${d.id}</td>
-                    <td>${d.name}</td>
-                    <td>${d.city}</td>
-                    <td>${d.country}</td>
-                    <td>${d.zip}</td>
-                    <td>${d.lat}</td>
-                    <td>${d.lng}</td>
-                    <td class="text-end pe-4 sortable" data-col="catSelected">${d.catSelected}</td>
-                    <td class="text-end pe-4 sortable" data-col="allCat">${d.allCat}</td>
-                </tr>
-            `;
-            $tbody.append(row);
-        });
+    // Tính rank mới dựa trên allCat (hoặc cột đang sort nếu muốn)
+    const rankedData = data.map((d, i) => ({
+      ...d,
+      currentRank: i + 1,
+    }));
 
-        // Xóa mũi tên cũ
-        $("#storesTable thead th .sort-arrow").text("");
+    $tbody.empty();
 
-        // Cập nhật mũi tên mới
-        $(`#storesTable thead th[data-col="${column}"] .sort-arrow`)
-            .text(asc ? "▲" : "▼");
+    rankedData.forEach((d) => {
+      const rankHtml = getRankMedal(d.currentRank);
+
+      const row = `
+        <tr>
+            <td class="text-center align-middle">${rankHtml}</td>
+            <td class="text-center text-muted small">${d.id}</td>
+            <td class="fw-semibold">${d.name}</td>
+            <td>${d.city}</td>
+            <td>${d.country}</td>
+            <td>${d.zip}</td>
+            <td>${d.lat.toFixed(6)}</td>
+            <td>${d.lng.toFixed(6)}</td>
+            <td class="text-end pe-4">
+                <div class="value-main text-success fw-bold">${d.catSelected.toLocaleString(
+                  "vi-VN"
+                )} ₫</div>
+            </td>
+            <td class="text-end pe-4">
+                <div class="value-main text-success fw-bold">${d.allCat.toLocaleString(
+                  "vi-VN"
+                )} ₫</div>
+            </td>
+        </tr>
+      `;
+      $tbody.append(row);
+    });
+
+    // Cập nhật mũi tên sort
+    $("#storesTable thead th .sort-arrow").text("");
+    $(`#storesTable thead th[data-col="${column}"] .sort-arrow`).text(
+      asc ? "▲" : "▼"
+    );
+  }
+
+  // ============= CLICK ĐỂ SORT =============
+  $("#storesTable thead").on("click", ".sortable", function () {
+    const col = $(this).data("col");
+    if (currentSort.col === col) {
+      currentSort.asc = !currentSort.asc;
+    } else {
+      currentSort = { col: col, asc: false };
     }
-
-    // 3. Event click sort
-    $("#storesTable thead").on("click", ".sortable", function () {
-        const col = $(this).data("col");
-
-        if (currentSort.col === col)
-            currentSort.asc = !currentSort.asc;
-        else
-            currentSort = { col: col, asc: true };
-
-        sortAndRender(currentSort.col, currentSort.asc);
-    });
+    sortAndRender(currentSort.col, currentSort.asc);
+  });
 });
 
-// === Revenue Report JS (main.js) ===
-$(document).ready(function() {
-    const revenueTable = $('#revenueTable tbody');
-    const viewModeSelect = $('#viewMode');
-    let chartLine, chartBar, chartPie;
+// =======================================================
+// REPORT-REVENUES
+// =======================================================
+$(document).ready(function () {
+  const revenueTable = $("#revenueTable tbody");
+  const viewModeSelect = $("#viewMode");
+  let chartLine, chartBar, chartPie;
 
-    const today = new Date();
-    const revenueData = [];
+  const today = new Date();
+  const revenueData = [];
 
-    // Tạo dữ liệu 6 tháng gần đây
-    for(let m = 0; m < 6; m++) {
-        const month = new Date(today.getFullYear(), today.getMonth() - m, 1);
-        for(let i = 1; i <= 5; i++) {
-            revenueData.push({
-                date: new Date(month.getFullYear(), month.getMonth(), i).toISOString().slice(0,10),
-                storeId: `S0${i}`,
-                name: `Store ${String.fromCharCode(64+i)}`,
-                country: i % 2 === 0 ? 'UK' : 'USA',
-                revenue: Math.floor(Math.random() * 15000 + 5000),
-                growth: Math.floor(Math.random() * 20 - 10),
-                category: ['Electronics','Clothing','Home'][i % 3]
-            });
-        }
+  // Tạo dữ liệu 6 tháng gần đây
+  for (let m = 0; m < 6; m++) {
+    const month = new Date(today.getFullYear(), today.getMonth() - m, 1);
+    for (let i = 1; i <= 5; i++) {
+      revenueData.push({
+        date: new Date(month.getFullYear(), month.getMonth(), i)
+          .toISOString()
+          .slice(0, 10),
+        storeId: `S0${i}`,
+        name: `Store ${String.fromCharCode(64 + i)}`,
+        country: i % 2 === 0 ? "UK" : "USA",
+        revenue: Math.floor(Math.random() * 15000 + 5000),
+        growth: Math.floor(Math.random() * 20 - 10),
+        category: ["Electronics", "Clothing", "Home"][i % 3],
+      });
     }
+  }
 
-    function renderTable(data) {
-        revenueTable.empty();
-        data.forEach(d => {
-            const growthClass = d.growth >= 0 ? 'text-success' : 'text-danger';
-            revenueTable.append(`
+  function renderTable(data) {
+    revenueTable.empty();
+    data.forEach((d) => {
+      const growthClass = d.growth >= 0 ? "text-success" : "text-danger";
+      revenueTable.append(`
                 <tr>
                     <td>${d.date}</td>
                     <td>$${d.revenue.toLocaleString()}</td>
                     <td class='${growthClass}'>${d.growth}%</td>
                 </tr>
             `);
-        });
+    });
+  }
+
+  function renderCharts(data) {
+    // --- Revenue Trend (Line chart 7 ngày trong tuần) ---
+    const day = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      weekDates.push(d.toISOString().slice(0, 10));
+    }
+    const weeklyRevenue = weekDates.map((date) => {
+      const dayData = data.filter((d) => d.date === date);
+      return dayData.length
+        ? dayData.reduce((sum, x) => sum + x.revenue, 0)
+        : Math.floor(Math.random() * 15000 + 5000);
+    });
+    const ctxLine = document.getElementById("lineChart").getContext("2d");
+    if (chartLine) chartLine.destroy();
+    chartLine = new Chart(ctxLine, {
+      type: "line",
+      data: {
+        labels: weekDates,
+        datasets: [
+          {
+            label: "Revenue",
+            data: weeklyRevenue,
+            borderColor: "#007bff",
+            backgroundColor: "rgba(0,123,255,0.1)",
+            fill: true,
+            tension: 0.4,
+            pointStyle: "circle",
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          },
+        ],
+      },
+      options: { responsive: true, plugins: { legend: { display: true } } },
+    });
+
+    // --- Revenue Comparison (6 tháng gần đây) ---
+    const monthLabels = [];
+    const monthlyRevenue = [];
+    for (let m = 5; m >= 0; m--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - m, 1);
+      const monthKey = d.toISOString().slice(0, 7);
+      monthLabels.push(monthKey);
+      const monthTotal = data
+        .filter((x) => x.date.slice(0, 7) === monthKey)
+        .reduce((sum, x) => sum + x.revenue, 0);
+      monthlyRevenue.push(monthTotal);
     }
 
-    function renderCharts(data) {
-        // --- Revenue Trend (Line chart 7 ngày trong tuần) ---
-        const day = today.getDay();
-        const monday = new Date(today);
-        monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-        const weekDates = [];
-        for(let i = 0; i < 7; i++) {
-            const d = new Date(monday);
-            d.setDate(monday.getDate() + i);
-            weekDates.push(d.toISOString().slice(0,10));
-        }
-        const weeklyRevenue = weekDates.map(date => {
-            const dayData = data.filter(d => d.date === date);
-            return dayData.length ? dayData.reduce((sum,x)=>sum+x.revenue,0) : Math.floor(Math.random()*15000+5000);
-        });
-        const ctxLine = document.getElementById('lineChart').getContext('2d');
-        if(chartLine) chartLine.destroy();
-        chartLine = new Chart(ctxLine, {
-            type: 'line',
-            data: {
-                labels: weekDates,
-                datasets: [{
-                    label: 'Revenue',
-                    data: weeklyRevenue,
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0,123,255,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointStyle: 'circle',
-                    pointRadius: 5,
-                    pointHoverRadius: 7
-                }]
-            },
-            options: { responsive: true, plugins: { legend: { display: true } } }
-        });
+    // Fake growth so với cùng kỳ năm trước
+    const monthlyRevenuePrev = monthlyRevenue.map(
+      (x) => x * (Math.random() * 0.3 + 0.85)
+    );
+    const growthPercent = monthlyRevenue.map((val, i) =>
+      monthlyRevenuePrev[i]
+        ? (
+            ((val - monthlyRevenuePrev[i]) / monthlyRevenuePrev[i]) *
+            100
+          ).toFixed(1)
+        : 0
+    );
 
-        // --- Revenue Comparison (6 tháng gần đây) ---
-        const monthLabels = [];
-        const monthlyRevenue = [];
-        for(let m = 5; m >= 0; m--) {
-            const d = new Date(today.getFullYear(), today.getMonth() - m, 1);
-            const monthKey = d.toISOString().slice(0,7);
-            monthLabels.push(monthKey);
-            const monthTotal = data.filter(x=>x.date.slice(0,7)===monthKey).reduce((sum,x)=>sum+x.revenue,0);
-            monthlyRevenue.push(monthTotal);
-        }
+    const ctxBar = document.getElementById("barChart").getContext("2d");
+    if (chartBar) chartBar.destroy();
+    chartBar = new Chart(ctxBar, {
+      type: "bar",
+      data: {
+        labels: monthLabels,
+        datasets: [
+          {
+            type: "line",
+            label: "Growth (%) vs Last Year",
+            data: growthPercent,
+            backgroundColor: "#f46505ff",
+            borderColor: "#f4a005",
+            borderWidth: 2,
+            fill: false,
+            yAxisID: "y1",
+            order: 1,
+            tension: 0.4,
+            pointStyle: "circle",
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          },
+          {
+            type: "bar",
+            label: "Monthly Revenue",
+            data: monthlyRevenue,
+            backgroundColor: "#4b50ea",
+            order: 2,
+            borderRadius: 8,
+            barPercentage: 0.5,
+            categoryPercentage: 0.6,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "top" } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: "Revenue ($)" },
+          },
+          y1: {
+            position: "right",
+            ticks: { callback: (val) => val + "%" },
+            title: { display: true, text: "Growth (%)" },
+            beginAtZero: true,
+          },
+        },
+      },
+    });
 
-        // Fake growth so với cùng kỳ năm trước
-        const monthlyRevenuePrev = monthlyRevenue.map(x => x * (Math.random() * 0.3 + 0.85));
-        const growthPercent = monthlyRevenue.map((val,i) => monthlyRevenuePrev[i] ? ((val - monthlyRevenuePrev[i])/monthlyRevenuePrev[i]*100).toFixed(1) : 0);
+    // --- Pie chart ---
+    const categories = [...new Set(data.map((d) => d.category))];
+    const categorySums = categories.map((c) =>
+      data
+        .filter((d) => d.category === c)
+        .reduce((sum, x) => sum + x.revenue, 0)
+    );
+    const ctxPie = document.getElementById("pieChart").getContext("2d");
+    if (chartPie) chartPie.destroy();
+    chartPie = new Chart(ctxPie, {
+      type: "pie",
+      data: {
+        labels: categories,
+        datasets: [
+          {
+            data: categorySums,
+            backgroundColor: ["#007bff", "#28a745", "#dc3545", "#ffc107"],
+            hoverOffset: 10,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+      },
+    });
+    $("#pieChart").css("max-height", "300px");
+  }
 
-        const ctxBar = document.getElementById('barChart').getContext('2d');
-        if(chartBar) chartBar.destroy();
-        chartBar = new Chart(ctxBar, {
-            type: 'bar',
-            data: {
-                labels: monthLabels,
-                datasets: [
-                    {
-                        type: 'line',
-                        label: 'Growth (%) vs Last Year',
-                        data: growthPercent,
-                        backgroundColor: '#f46505ff',
-                        borderColor: '#f4a005',
-                        borderWidth: 2,
-                        fill: false,
-                        yAxisID: 'y1',
-                        order: 1,
-                        tension: 0.4,
-                        pointStyle: 'circle',
-                        pointRadius: 5,
-                        pointHoverRadius: 7
-                    },
-                    {
-                        type: 'bar',
-                        label: 'Monthly Revenue',
-                        data: monthlyRevenue,
-                        backgroundColor: '#4b50ea',
-                        order: 2,
-                        borderRadius: 8,
-                        barPercentage: 0.5,
-                        categoryPercentage: 0.6
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'top' } },
-                scales: {
-                    y: { beginAtZero: true, title: { display:true, text:'Revenue ($)' } },
-                    y1: {
-                        position: 'right',
-                        ticks: { callback: val => val + '%' },
-                        title: { display:true, text:'Growth (%)' },
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+  function updateReport() {
+    const mode = viewModeSelect.val();
+    let filteredData = [...revenueData];
+    renderTable(filteredData);
+    renderCharts(filteredData);
 
-        // --- Pie chart ---
-        const categories = [...new Set(data.map(d=>d.category))];
-        const categorySums = categories.map(c => data.filter(d=>d.category===c).reduce((sum,x)=>sum+x.revenue,0));
-        const ctxPie = document.getElementById('pieChart').getContext('2d');
-        if(chartPie) chartPie.destroy();
-        chartPie = new Chart(ctxPie, {
-            type: 'pie',
-            data: { 
-                labels: categories, 
-                datasets: [{
-                    data: categorySums, 
-                    backgroundColor: ['#007bff','#28a745','#dc3545','#ffc107'],
-                    hoverOffset: 10
-                }] 
-            },
-            options: { 
-                responsive:true, 
-                maintainAspectRatio:false, 
-                plugins:{legend:{position:'bottom'}}
-            }
-        });
-        $('#pieChart').css('max-height','300px');
+    // Tổng doanh thu
+    const totalRevenue = filteredData.reduce((sum, d) => sum + d.revenue, 0);
+    $("#sumRevenue").text(`$${totalRevenue.toLocaleString()}`);
+
+    // Tính growth theo mode
+    let growth = 0;
+    if (mode === "daily") {
+      const todayStr = today.toISOString().slice(0, 10);
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().slice(0, 10);
+      const todayRevenue = filteredData
+        .filter((d) => d.date === todayStr)
+        .reduce((s, x) => s + x.revenue, 0);
+      const yesterdayRevenue = filteredData
+        .filter((d) => d.date === yesterdayStr)
+        .reduce((s, x) => s + x.revenue, 0);
+      growth = yesterdayRevenue
+        ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
+        : 0;
+    } else if (mode === "weekly") {
+      const day = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+      const lastMonday = new Date(monday);
+      lastMonday.setDate(monday.getDate() - 7);
+      let thisWeek = 0,
+        lastWeek = 0;
+      for (let i = 0; i < 7; i++) {
+        const d1 = new Date(monday);
+        d1.setDate(monday.getDate() + i);
+        const d2 = new Date(lastMonday);
+        d2.setDate(lastMonday.getDate() + i);
+        const str1 = d1.toISOString().slice(0, 10);
+        const str2 = d2.toISOString().slice(0, 10);
+        thisWeek += filteredData
+          .filter((d) => d.date === str1)
+          .reduce((s, x) => s + x.revenue, 0);
+        lastWeek += filteredData
+          .filter((d) => d.date === str2)
+          .reduce((s, x) => s + x.revenue, 0);
+      }
+      growth = lastWeek ? ((thisWeek - lastWeek) / lastWeek) * 100 : 0;
+    } else if (mode === "monthly") {
+      const thisMonth = today.toISOString().slice(0, 7);
+      const lastMonthDate = new Date(
+        today.getFullYear(),
+        today.getMonth() - 1,
+        1
+      );
+      const lastMonth = lastMonthDate.toISOString().slice(0, 7);
+      const thisMonthRevenue = filteredData
+        .filter((d) => d.date.slice(0, 7) === thisMonth)
+        .reduce((s, x) => s + x.revenue, 0);
+      const lastMonthRevenue = filteredData
+        .filter((d) => d.date.slice(0, 7) === lastMonth)
+        .reduce((s, x) => s + x.revenue, 0);
+      growth = lastMonthRevenue
+        ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+        : 0;
+    } else if (mode === "yearly") {
+      const thisYear = today.getFullYear();
+      const lastYear = thisYear - 1;
+      const thisYearRevenue = filteredData
+        .filter((d) => new Date(d.date).getFullYear() === thisYear)
+        .reduce((s, x) => s + x.revenue, 0);
+      const lastYearRevenue = filteredData
+        .filter((d) => new Date(d.date).getFullYear() === lastYear)
+        .reduce((s, x) => s + x.revenue, 0);
+      growth = lastYearRevenue
+        ? ((thisYearRevenue - lastYearRevenue) / lastYearRevenue) * 100
+        : 0;
     }
 
-    function updateReport() {
-        const mode = viewModeSelect.val();
-        let filteredData = [...revenueData];
-        renderTable(filteredData);
-        renderCharts(filteredData);
+    const growthText = `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`;
+    const growthClass = growth >= 0 ? "text-success" : "text-danger";
+    $("#monthlyGrowth")
+      .text(growthText)
+      .removeClass("text-success text-danger")
+      .addClass(growthClass);
+    let labelText = mode.charAt(0).toUpperCase() + mode.slice(1) + " Growth";
+    $("#monthlyGrowth").prev("h6").text(labelText);
 
-        // Tổng doanh thu
-        const totalRevenue = filteredData.reduce((sum,d)=>sum+d.revenue,0);
-        $('#sumRevenue').text(`$${totalRevenue.toLocaleString()}`);
+    // Active stores
+    $("#activeStores").text(filteredData.length);
+  }
 
-        // Tính growth theo mode
-        let growth = 0;
-        if(mode==='daily'){
-            const todayStr = today.toISOString().slice(0,10);
-            const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
-            const yesterdayStr = yesterday.toISOString().slice(0,10);
-            const todayRevenue = filteredData.filter(d=>d.date===todayStr).reduce((s,x)=>s+x.revenue,0);
-            const yesterdayRevenue = filteredData.filter(d=>d.date===yesterdayStr).reduce((s,x)=>s+x.revenue,0);
-            growth = yesterdayRevenue ? ((todayRevenue - yesterdayRevenue)/yesterdayRevenue*100) : 0;
-        } else if(mode==='weekly'){
-            const day = today.getDay();
-            const monday = new Date(today); monday.setDate(today.getDate()-(day===0?6:day-1));
-            const lastMonday = new Date(monday); lastMonday.setDate(monday.getDate()-7);
-            let thisWeek=0,lastWeek=0;
-            for(let i=0;i<7;i++){
-                const d1 = new Date(monday); d1.setDate(monday.getDate()+i);
-                const d2 = new Date(lastMonday); d2.setDate(lastMonday.getDate()+i);
-                const str1 = d1.toISOString().slice(0,10);
-                const str2 = d2.toISOString().slice(0,10);
-                thisWeek += filteredData.filter(d=>d.date===str1).reduce((s,x)=>s+x.revenue,0);
-                lastWeek += filteredData.filter(d=>d.date===str2).reduce((s,x)=>s+x.revenue,0);
-            }
-            growth = lastWeek ? ((thisWeek-lastWeek)/lastWeek*100) : 0;
-        } else if(mode==='monthly'){
-            const thisMonth = today.toISOString().slice(0,7);
-            const lastMonthDate = new Date(today.getFullYear(), today.getMonth()-1,1);
-            const lastMonth = lastMonthDate.toISOString().slice(0,7);
-            const thisMonthRevenue = filteredData.filter(d=>d.date.slice(0,7)===thisMonth).reduce((s,x)=>s+x.revenue,0);
-            const lastMonthRevenue = filteredData.filter(d=>d.date.slice(0,7)===lastMonth).reduce((s,x)=>s+x.revenue,0);
-            growth = lastMonthRevenue ? ((thisMonthRevenue-lastMonthRevenue)/lastMonthRevenue*100) :0;
-        } else if(mode==='yearly'){
-            const thisYear = today.getFullYear();
-            const lastYear = thisYear-1;
-            const thisYearRevenue = filteredData.filter(d=>new Date(d.date).getFullYear()===thisYear).reduce((s,x)=>s+x.revenue,0);
-            const lastYearRevenue = filteredData.filter(d=>new Date(d.date).getFullYear()===lastYear).reduce((s,x)=>s+x.revenue,0);
-            growth = lastYearRevenue ? ((thisYearRevenue-lastYearRevenue)/lastYearRevenue*100) : 0;
-        }
-
-        const growthText = `${growth>=0?'+':''}${growth.toFixed(1)}%`;
-        const growthClass = growth>=0?'text-success':'text-danger';
-        $('#monthlyGrowth')
-            .text(growthText)
-            .removeClass('text-success text-danger')
-            .addClass(growthClass);
-        let labelText = mode.charAt(0).toUpperCase() + mode.slice(1) + ' Growth';
-        $('#monthlyGrowth').prev('h6').text(labelText);
-
-        // Active stores
-        $('#activeStores').text(filteredData.length);
-    }
-
-    viewModeSelect.on('change', updateReport);
-    updateReport();
+  viewModeSelect.on("change", updateReport);
+  updateReport();
 });
+
+// =======================================================
+// REPORT-SALES
+// =======================================================
+// 1. Biểu đồ tròn - Kênh bán hàng (đã sửa lỗi JSON)
+new Chart(document.getElementById("channelChart"), {
+  type: "doughnut",
+  data: {
+    labels: ["Website", "App Mobile", "Facebook", "Zalo", "Offline Store"],
+    datasets: [
+      {
+        data: [38, 25, 18, 12, 7],
+        backgroundColor: [
+          "#3b82f6",
+          "#10b981",
+          "#f59e0b",
+          "#8b5cf6",
+          "#ef4444",
+        ],
+        borderWidth: 4,
+        borderColor: "#fff",
+        hoverOffset: 10,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom", labels: { padding: 20 } } },
+  },
+});
+
+// 2. Biểu đồ cột
+new Chart(document.getElementById("topProductsChart"), {
+  type: "bar",
+  data: {
+    labels: [
+      "iPhone 15 Pro",
+      "MacBook Air M2",
+      "Samsung S24",
+      "iPad Pro",
+      "AirPods Pro",
+      "Apple Watch 9",
+      "Sony WH-1000XM5",
+      "Dell XPS 15",
+      "Surface Pro 9",
+      "Galaxy Tab S9",
+    ],
+    datasets: [
+      {
+        label: "Doanh thu (tỷ ₫)",
+        data: [142, 118, 97, 85, 72, 68, 59, 54, 48, 43],
+        backgroundColor: "#3bbef6ff",
+        borderRadius: 8,
+        borderSkipped: false,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, grid: { display: false } } },
+  },
+});
+
+// 3. Biểu đồ đường
+const dates = Array.from({ length: 30 }, (_, i) =>
+  dayjs()
+    .subtract(29 - i, "day")
+    .format("DD/MM")
+);
+const revenues = [
+  32, 35, 38, 36, 41, 44, 42, 48, 51, 49, 53, 55, 58, 56, 61, 64, 62, 68, 71,
+  69, 74, 77, 79, 82, 85, 88, 91, 94, 96, 102,
+];
+
+new Chart(document.getElementById("revenueTrendChart"), {
+  type: "line",
+  data: {
+    labels: dates,
+    datasets: [
+      {
+        label: "Doanh thu (tỷ ₫)",
+        data: revenues,
+        borderColor: "#54f7c0ff",
+        backgroundColor: "rgba(16, 185, 129, 0.1)",
+        tension: 0.4,
+        fill: true,
+        pointRadius: 4,
+        pointBackgroundColor: "#10b981",
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: "top" } },
+    scales: { y: { beginAtZero: false } },
+  },
+});
+
+// 4. Biểu đồ Gauge (bán nguyệt)
+document.addEventListener("DOMContentLoaded", function () {
+  // CẤU HÌNH GIÁ TRỊ TẠI ĐÂY
+  const percent = 87.3; // Giá trị % muốn hiển thị
+
+  const progressBar = document.getElementById("progress-bar");
+
+  // Tính toán chiều dài của đường path (cung tròn)
+  // getTotalLength() là hàm có sẵn của SVG path
+  const totalLength = progressBar.getTotalLength();
+
+  // Thiết lập stroke-dasharray bằng chiều dài cung (tạo nét đứt dài bằng cả cung)
+  progressBar.style.strokeDasharray = totalLength;
+
+  // Ban đầu ẩn toàn bộ (offset = totalLength)
+  progressBar.style.strokeDashoffset = totalLength;
+
+  // Tính toán offset cần thiết để hiển thị đúng %
+  // Công thức: Offset = Tổng dài - (Tổng dài * % / 100)
+  const offset = totalLength - (totalLength * percent) / 100;
+
+  // Set timeout nhỏ để CSS transition hoạt động (tạo hiệu ứng chạy)
+  setTimeout(() => {
+    progressBar.style.strokeDashoffset = offset;
+  }, 100);
+});
+
+// ==================== TOP 10 PROVINCES ====================
+const topProvinces = [
+  ["Ho Chi Minh City", "428B ₫", "34.3%"],
+  ["Hanoi", "312B ₫", "25.0%"],
+  ["Da Nang", "98B ₫", "7.9%"],
+  ["Binh Duong", "76B ₫", "6.1%"],
+  ["Dong Nai", "64B ₫", "5.1%"],
+  ["Can Tho", "48B ₫", "3.8%"],
+  ["Hai Phong", "42B ₫", "3.4%"],
+  ["Khanh Hoa", "38B ₫", "3.0%"],
+  ["Long An", "35B ₫", "2.8%"],
+  ["Ba Ria - Vung Tau", "31B ₫", "2.5%"],
+];
+
+const $provTbody = $("#topProvincesTable tbody");
+$provTbody.empty();
+topProvinces.forEach((p, i) => {
+  const rank = i + 1;
+  const medal =
+    rank === 1
+      ? `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`
+      : rank === 2
+      ? `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`
+      : rank === 3
+      ? `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`
+      : `<div class="rank-normal">${rank}</div>`;
+
+  $provTbody.append(`
+        <tr class="align-middle">
+            <td class="text-center">${medal}</td>
+            <td class="item-name">${p[0]}</td>
+            <td class="text-end pe-4"><div class="value-main text-success">${p[1]}</div></td>
+            <td class="text-end pe-4"><div class="value-main">${p[2]}</div></td>
+        </tr>
+    `);
+});
+
+// ==================== TOP 10 SALES REPRESENTATIVES ====================
+const topSalesReps = [
+  ["Lan Nguyen", "89.2B ₫", 1842, "48.4M ₫"],
+  ["Minh Tran", "76.5B ₫", 1623, "47.1M ₫"],
+  ["Huong Le", "68.9B ₫", 1498, "46.0M ₫"],
+  ["Hoang Pham", "62.1B ₫", 1387, "44.8M ₫"],
+  ["Mai Hoang", "58.7B ₫", 1298, "45.2M ₫"],
+  ["Nam Vu", "55.3B ₫", 1210, "45.7M ₫"],
+  ["Thu Do", "52.9B ₫", 1165, "45.4M ₫"],
+  ["Khanh Ngo", "50.4B ₫", 1108, "45.5M ₫"],
+  ["Ngoc Bui", "48.1B ₫", 1056, "45.5M ₫"],
+  ["Long Dang", "46.8B ₫", 1021, "45.8M ₫"],
+];
+
+const $repTbody = $("#topSalesRepsTable tbody");
+$repTbody.empty();
+topSalesReps.forEach((r, i) => {
+  const rank = i + 1;
+  const medal =
+    rank === 1
+      ? `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`
+      : rank === 2
+      ? `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`
+      : rank === 3
+      ? `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`
+      : `<div class="rank-normal">${rank}</div>`;
+
+  $repTbody.append(`
+        <tr class="align-middle">
+            <td class="text-center">${medal}</td>
+            <td class="item-name">${r[0]}</td>
+            <td class="text-end pe-4"><div class="value-main text-success">${r[1]}</div></td>
+            <td class="text-center"><div class="value-main">${r[2]}</div></td>
+            <td class="text-end pe-4"><div class="value-main">${r[3]}</div></td>
+        </tr>
+    `);
+});
+
+// ==================== NÚT DOWNLOAD CSV ====================
+$(".download-btn")
+  .off("click")
+  .on("click", function (e) {
+    e.preventDefault();
+    const type = $(this).data("target");
+    let csvContent = "";
+    let filename = "export.csv";
+
+    if (type === "top-provinces") {
+      csvContent = "Rank,Province/City,Revenue,% Total\n";
+      $("#topProvincesTable tbody tr").each(function (i) {
+        const rank = i + 1;
+        const cells = $(this).find("td");
+        const province = cells.eq(1).text();
+        const revenue = cells.eq(2).text().trim();
+        const percent = cells.eq(3).text().trim();
+        csvContent += `${rank},${province},${revenue},${percent}\n`;
+      });
+      filename = "Top_10_Provinces.csv";
+    } else if (type === "top-sales-reps") {
+      csvContent = "Rank,Employee,Revenue,Orders,AOV\n";
+      $("#topSalesRepsTable tbody tr").each(function (i) {
+        const rank = i + 1;
+        const cells = $(this).find("td");
+        const name = cells.eq(1).text();
+        const revenue = cells.eq(2).text().trim();
+        const orders = cells.eq(3).text().trim();
+        const aov = cells.eq(4).text().trim();
+        csvContent += `${rank},${name},${revenue},${orders},${aov}\n`;
+      });
+      filename = "Top_10_Sales_Representatives.csv";
+    }
+    // (giữ nguyên các case cũ như top-customers, recency...)
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(blob));
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
