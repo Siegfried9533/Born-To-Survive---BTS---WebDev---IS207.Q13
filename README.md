@@ -1,67 +1,59 @@
-# 🌐 **Born To Survive - BTS | WebDev - IS207.Q13**
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-> 💡 *Đồ án môn học: Phát triển Ứng dụng Web (IS207.Q13)*  
-> 👥 *Nhóm thực hiện: Born To Survive - BTS*
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
----
+## About Laravel
 
-## 🎯 **Mục tiêu dự án**
-- 🚀 Thiết kế **giao diện web trực quan, thân thiện với người dùng**  
-- 🧩 Xây dựng **hệ thống backend ổn định, bảo mật và hiệu quả**  
-- 🔍 Tích hợp **tính năng đăng nhập, quản lý dữ liệu, tìm kiếm thông minh**  
-- 🧠 Áp dụng **quy trình phát triển phần mềm chuyên nghiệp** (phân tích – thiết kế – triển khai – kiểm thử)
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
----
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-## 🛠️ **Công nghệ sử dụng**
-| Thành phần | Công nghệ |
-|-------------|------------|
-| 🎨 **Frontend** | HTML, CSS, JavaScript |
-| ⚙️ **Backend** | PHP *(hoặc Node.js tuỳ nhóm triển khai)* |
-| 🗄️ **Database** | MySQL |
-| 🔧 **Version Control** | Git & GitHub |
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
----
+## Learning Laravel
 
-## 📁 **Cấu trúc thư mục**
-```bash
-project/
-├── frontend/ # Giao diện người dùng (UI/UX)
-├── backend/ # Xử lý nghiệp vụ và API
-├── assets/ # Hình ảnh, biểu tượng, tài nguyên tĩnh
-├── docs/ # Tài liệu thiết kế & báo cáo
-└── README.md # Mô tả dự án
-```
----
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
 
-## 👥 **Thành viên nhóm**
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-| TT | Họ và tên | MSSV | Email | Vai trò |
-|:--:|------------|:------:|:----------:|:----------------------------|
-| 1 | **Lê Trường Hòa** | 23520504 | 23520504@gm.uit.edu.vn | 🧭 **Nhóm trưởng**, ⚙️ Backend & 📊 Data Analyst |
-| 2 | Trần Đại Hải | 23520420 | 23520420@gm.uit.edu.vn | ⚙️ Backend Developer |
-| 3 | Lê Nguyễn Thành Công | 23520191 | 23520191@gm.uit.edu.vn | ⚙️ Backend Developer |
-| 4 | Mai Nguyễn Bảo Duy | 23520369 | 23520369@gm.uit.edu.vn | ⚙️ Backend Developer |
-| 5 | Nguyễn Thúy Ngân | 23520996 | 23520996@gm.uit.edu.vn | 🎨 Frontend Developer |
-| 6 | Lê Đào Anh Thư | 23521537 | 23521537@gm.uit.edu.vn | 🎨 Frontend Developer |
-| 7 | Nguyễn Trần Thảo Nguyên | 23521052 | 23521052@gm.uit.edu.vn | 🎨 Frontend Developer |
+## Laravel Sponsors
 
----
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-## 🚀 **Hướng dẫn chạy dự án**
+### Premium Partners
 
-### 1️⃣ Clone repo về máy
-git clone https://github.com/your-username/Born-To-Survive---BTS---WebDev---IS207.Q13.git
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
 
-### 2️⃣ Di chuyển vào thư mục backend và cài đặt dependencies
-cd backend
-npm install
+## Contributing
 
-### 3️⃣ Khởi chạy server
-npm start
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-### Mở frontend bằng Live Server hoặc trình duyệt
-📌 Ghi chú
-Dự án đang trong quá trình phát triển, có thể thay đổi theo tiến độ.
+## Code of Conduct
 
-Vui lòng liên hệ nhóm qua nhóm trưởng nếu có thắc mắc hoặc góp ý.
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+
+## Security Vulnerabilities
+
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
