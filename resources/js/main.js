@@ -1981,15 +1981,18 @@ $.get(dataPath, function (text) {
 });
 
 // =======================================================
-// TOP-STORES
+// TOP-STORES (Dữ liệu từ API Laravel)
 // =======================================================
 $(document).ready(function () {
   const $tbody = $("#storesTable tbody");
-  const dataPath = "../../assets/fake-data/stores-data.txt";
+  // 1. Thay đổi đường dẫn tới API Laravel của bạn
+  const apiUrl = "/api/analytics/stores"; 
+  
   let data = [];
+  // Mặc định sắp xếp theo Doanh thu (allCat) giảm dần
   let currentSort = { col: "allCat", asc: false };
 
-  // ============= CSS CHO HUY CHƯƠNG (chỉ cần 1 lần) =============
+  // ============= CSS CHO HUY CHƯƠNG (Giữ nguyên) =============
   const medalStyle = `
     <style>
       .rank-trophy { font-size: 1.5rem; line-height: 1; }
@@ -1997,58 +2000,69 @@ $(document).ready(function () {
       .rank-trophy.silver i { color: #C0C0C0; text-shadow: 0 0 12px rgba(192,192,192,0.7); }
       .rank-trophy.bronze i { color: #CD7F32; text-shadow: 0 0 12px rgba(205,127,50,0.7); }
       .rank-normal { 
-        text-align: center; 
-        font-weight: 600; 
-        color: #495057; 
-        font-size: 1.1rem;
+        text-align: center; font-weight: 600; color: #495057; font-size: 1.1rem;
       }
     </style>
   `;
   $("head").append(medalStyle);
 
-  // ============= LOAD DỮ LIỆU =============
-  $.get(dataPath, function (text) {
-    const lines = text.trim().split("\n");
-    lines.forEach((line) => {
-      const cols = line.split(",");
-      if (cols.length < 9) return;
-      data.push({
-        id: cols[0].trim(),
-        name: cols[1].trim(),
-        city: cols[2].trim(),
-        country: cols[3].trim(),
-        zip: cols[4].trim(),
-        lat: parseFloat(cols[5]),
-        lng: parseFloat(cols[6]),
-        catSelected: parseInt(cols[7]),
-        allCat: parseInt(cols[8]),
-      });
+  // ============= LOAD DỮ LIỆU TỪ API =============
+  $.get(apiUrl, function (response) {
+    // API trả về format: { status: "success", data: [...] }
+    const apiData = response.data;
+
+    if (!apiData || apiData.length === 0) {
+        $tbody.html(`<tr><td colspan="10" class="text-center">Chưa có dữ liệu cửa hàng</td></tr>`);
+        return;
+    }
+
+    // 2. Map dữ liệu từ API sang cấu trúc của bảng cũ
+    data = apiData.map(item => {
+        return {
+            id: item.StoreID,           // Từ API
+            name: item.Name,            // Từ API
+            city: item.City,            // Từ API
+            country: item.Country || 'VN', // Nếu API thiếu thì mặc định VN
+            zip: item.ZIPCode || '',    
+            // Nếu API chưa trả về Lat/Lng thì để mặc định 0 để không lỗi bảng
+            lat: parseFloat(item.Latitude || 0), 
+            lng: parseFloat(item.Longitude || 0),
+            
+            // Giả sử catSelected là doanh thu lọc theo danh mục (tạm thời để 0 hoặc bằng tổng)
+            catSelected: 0, 
+            
+            // Map doanh thu từ API vào cột allCat
+            allCat: parseInt(item.revenue || 0) 
+        };
     });
 
+    // Render lần đầu
     sortAndRender(currentSort.col, currentSort.asc);
-  }).fail(() => {
+
+  }).fail((jqXHR) => {
+    // Xử lý lỗi chi tiết hơn
+    console.error("Lỗi API:", jqXHR);
     $tbody.html(
-      `<tr><td colspan="10" class="text-center text-danger">Không tải được file stores.txt</td></tr>`
+      `<tr><td colspan="10" class="text-center text-danger">
+        Lỗi kết nối API (${jqXHR.status}). Hãy kiểm tra lại server Laravel.
+      </td></tr>`
     );
   });
 
-  // ============= HÀM TẠO HUY CHƯƠNG =============
+  // ============= HÀM TẠO HUY CHƯƠNG (Giữ nguyên) =============
   function getRankMedal(rank) {
-    if (rank === 1)
-      return `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`;
-    if (rank === 2)
-      return `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`;
-    if (rank === 3)
-      return `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`;
+    if (rank === 1) return `<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>`;
+    if (rank === 2) return `<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>`;
+    if (rank === 3) return `<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>`;
     return `<div class="rank-normal">${rank}</div>`;
   }
 
-  // ============= SORT + RENDER =============
+  // ============= SORT + RENDER (Giữ nguyên logic) =============
   function sortAndRender(column, asc) {
-    // Sort dữ liệu hiện tại
+    // Sort dữ liệu
     data.sort((a, b) => (asc ? a[column] - b[column] : b[column] - a[column]));
 
-    // Tính rank mới dựa trên allCat (hoặc cột đang sort nếu muốn)
+    // Tính rank lại sau khi sort
     const rankedData = data.map((d, i) => ({
       ...d,
       currentRank: i + 1,
@@ -2070,14 +2084,10 @@ $(document).ready(function () {
             <td>${d.lat.toFixed(6)}</td>
             <td>${d.lng.toFixed(6)}</td>
             <td class="text-end pe-4">
-                <div class="value-main text-success fw-bold">${d.catSelected.toLocaleString(
-                  "vi-VN"
-                )} ₫</div>
+                <div class="value-main text-secondary small">${d.catSelected.toLocaleString("vi-VN")} ₫</div>
             </td>
             <td class="text-end pe-4">
-                <div class="value-main text-success fw-bold">${d.allCat.toLocaleString(
-                  "vi-VN"
-                )} ₫</div>
+                <div class="value-main text-success fw-bold">${d.allCat.toLocaleString("vi-VN")} ₫</div>
             </td>
         </tr>
       `;
@@ -2086,12 +2096,10 @@ $(document).ready(function () {
 
     // Cập nhật mũi tên sort
     $("#storesTable thead th .sort-arrow").text("");
-    $(`#storesTable thead th[data-col="${column}"] .sort-arrow`).text(
-      asc ? "▲" : "▼"
-    );
+    $(`#storesTable thead th[data-col="${column}"] .sort-arrow`).text(asc ? "▲" : "▼");
   }
 
-  // ============= CLICK ĐỂ SORT =============
+  // ============= CLICK ĐỂ SORT (Giữ nguyên) =============
   $("#storesTable thead").on("click", ".sortable", function () {
     const col = $(this).data("col");
     if (currentSort.col === col) {

@@ -67,23 +67,21 @@ class AnalyticsController extends Controller
     public function getStoreComparison()
     {
         // Logic: Join Store -> Invoice -> InvoiceLines để tính tiền
+        // Trong AnalyticsController.php
         $stores = DB::table('stores')
-            ->leftJoin('invoices', 'stores.StoreID', '=', 'invoices.StoreID')
-            ->leftJoin('invoice_lines', 'invoices.InvoiceID', '=', 'invoice_lines.InvoiceID')
+            ->leftJoin(...)
             ->select(
                 'stores.StoreID',
                 'stores.Name',
                 'stores.City',
-                
-                // Đếm tổng số đơn hàng (Count unique InvoiceID)
-                DB::raw('COUNT(DISTINCT invoices.InvoiceID) as total_orders'),
-                
-                // Tính tổng doanh thu
-                DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as revenue')
+                'stores.Country',      // <--- Thêm dòng này
+                'stores.ZIPCode',      // <--- Thêm dòng này
+                'stores.Latitude',     // <--- Thêm dòng này
+                'stores.Longitude',    // <--- Thêm dòng này
+                DB::raw('COUNT...'),
+                DB::raw('SUM...')
             )
-            ->groupBy('stores.StoreID', 'stores.Name', 'stores.City')
-            ->orderByDesc('revenue') // Sắp xếp doanh thu cao nhất lên đầu (Xếp hạng)
-            ->get();
+            // ...
 
         // Thêm trường "Rank" (Xếp hạng) vào kết quả
         $rankedStores = $stores->map(function ($item, $index) {
@@ -149,6 +147,20 @@ class AnalyticsController extends Controller
                 'total_employees' => $employeeCount,
                 'best_selling_product' => $topProduct ? $topProduct->Description : 'N/A'
             ]
+        ]);
+    }
+    public function getAllStores()
+    {
+        // Dùng Query Builder lấy dữ liệu trực tiếp cho nhanh
+        $stores = DB::table('stores')
+            ->select('StoreID', 'Name', 'City', 'Country') // Chỉ lấy các cột cần thiết
+            ->orderBy('Name', 'asc') // Sắp xếp tên A-Z
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'count' => $stores->count(),
+            'data' => $stores
         ]);
     }
 }
