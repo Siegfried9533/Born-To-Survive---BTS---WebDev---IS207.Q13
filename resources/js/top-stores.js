@@ -1,10 +1,29 @@
 // =======================================================
 // TOP-STORES (Dữ liệu từ API Laravel)
 // =======================================================
-$(document).ready(function () {
+console.log("🔧 top-stores.js file đã được load");
+console.log("$ jQuery available?", typeof $ !== 'undefined' ? "✅ Có" : "❌ Không");
+
+// Nếu jQuery chưa load, chờ thêm
+if (typeof $ === 'undefined') {
+  console.warn("⚠️ jQuery chưa được load, chờ 1 giây...");
+  setTimeout(initTopStores, 1000);
+} else {
+  initTopStores();
+}
+
+function initTopStores() {
+  console.log("🚀 Bắt đầu khởi tạo Top Stores");
+  $(document).ready(function () {
+  console.log("📄 DOM ready - tiến hành khởi tạo bảng stores");
+  
   const $tbody = $("#storesTable tbody");
+  console.log("🎯 Tìm tbody element:", $tbody.length > 0 ? "✅ Tìm thấy" : "❌ Không tìm thấy");
+  
   // 1. Thay đổi đường dẫn tới API Laravel của bạn
-  const apiUrl = "/api/analytics/stores"; 
+  // Route hiện có là /api/analytics/stores (routes/api.php)
+  const apiUrl = "/api/analytics/stores";
+  console.log("🔗 API URL:", apiUrl); 
   
   let data = [];
   // Mặc định sắp xếp theo Doanh thu (allCat) giảm dần
@@ -25,11 +44,18 @@ $(document).ready(function () {
   $("head").append(medalStyle);
 
   // ============= LOAD DỮ LIỆU TỪ API =============
+  console.log("📡 Đang kết nối tới API:", apiUrl);
+  
   $.get(apiUrl, function (response) {
     // API trả về format: { status: "success", data: [...] }
+    console.log("✅ API Response:", response);
+    
     const apiData = response.data;
+    console.log("📦 Dữ liệu nhận được:", apiData);
+    console.log("📊 Số lượng cửa hàng:", apiData ? apiData.length : 0);
 
     if (!apiData || apiData.length === 0) {
+        console.warn("⚠️ Không có dữ liệu cửa hàng");
         $tbody.html(`<tr><td colspan="10" class="text-center">Chưa có dữ liệu cửa hàng</td></tr>`);
         return;
     }
@@ -57,12 +83,22 @@ $(document).ready(function () {
     // Render lần đầu
     sortAndRender(currentSort.col, currentSort.asc);
 
-  }).fail((jqXHR) => {
+  }).fail((jqXHR, textStatus, errorThrown) => {
     // Xử lý lỗi chi tiết hơn
-    console.error("Lỗi API:", jqXHR);
+    console.error("❌ Lỗi kết nối API:");
+    console.error("   Status:", jqXHR.status);
+    console.error("   Status Text:", jqXHR.statusText);
+    console.error("   Text Status:", textStatus);
+    console.error("   Error Thrown:", errorThrown);
+    console.error("   Response Text:", jqXHR.responseText);
+    console.error("   URL được gọi:", apiUrl);
+    
     $tbody.html(
       `<tr><td colspan="10" class="text-center text-danger">
-        Lỗi kết nối API (${jqXHR.status}). Hãy kiểm tra lại server Laravel.
+        ❌ Lỗi kết nối API (${jqXHR.status} ${jqXHR.statusText})<br>
+        <small>${textStatus}: ${errorThrown}</small><br>
+        <small>URL: ${apiUrl}</small><br>
+        <small>Kiểm tra console để xem chi tiết lỗi</small>
       </td></tr>`
     );
   });
@@ -127,4 +163,5 @@ $(document).ready(function () {
     }
     sortAndRender(currentSort.col, currentSort.asc);
   });
-});
+  });
+}

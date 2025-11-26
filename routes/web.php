@@ -22,3 +22,4 @@ Route::get('/profile', function () {
 Route::get('/top-stores', function () {
     return view('top-stores'); // Tên file view (không cần đuôi .blade.php)
 });
+
