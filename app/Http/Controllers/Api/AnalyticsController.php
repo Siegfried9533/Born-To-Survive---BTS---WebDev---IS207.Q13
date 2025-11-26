@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // Nhớ import thư viện DB
+use App\Models\Store;
+
 
 class AnalyticsController extends Controller
 {
@@ -63,37 +65,37 @@ class AnalyticsController extends Controller
             'data' => $products
         ]);
     }
-    // 1. API: So sánh hiệu suất các cửa hàng (Ranking)
-    public function getStoreComparison()
-    {
-        // Logic: Join Store -> Invoice -> InvoiceLines để tính tiền
-        // Trong AnalyticsController.php
-        $stores = DB::table('stores')
-            ->leftJoin(...)
-            ->select(
-                'stores.StoreID',
-                'stores.Name',
-                'stores.City',
-                'stores.Country',      // <--- Thêm dòng này
-                'stores.ZIPCode',      // <--- Thêm dòng này
-                'stores.Latitude',     // <--- Thêm dòng này
-                'stores.Longitude',    // <--- Thêm dòng này
-                DB::raw('COUNT...'),
-                DB::raw('SUM...')
-            )
-            // ...
+    // // 1. API: So sánh hiệu suất các cửa hàng (Ranking)
+    // public function getStoreComparison()
+    // {
+    //     // Logic: Join Store -> Invoice -> InvoiceLines để tính tiền
+    //     // Trong AnalyticsController.php
+    //     $stores = DB::table('stores')
+    //         ->leftJoin(...)
+    //         ->select(
+    //             'stores.StoreID',
+    //             'stores.Name',
+    //             'stores.City',
+    //             'stores.Country',      // <--- Thêm dòng này
+    //             'stores.ZIPCode',      // <--- Thêm dòng này
+    //             'stores.Latitude',     // <--- Thêm dòng này
+    //             'stores.Longitude',    // <--- Thêm dòng này
+    //             DB::raw('COUNT...'),
+    //             DB::raw('SUM...')
+    //         )
+    //         // ...
 
-        // Thêm trường "Rank" (Xếp hạng) vào kết quả
-        $rankedStores = $stores->map(function ($item, $index) {
-            $item->rank = $index + 1; // Rank 1, 2, 3...
-            return $item;
-        });
+    //     // Thêm trường "Rank" (Xếp hạng) vào kết quả
+    //     $rankedStores = $stores->map(function ($item, $index) {
+    //         $item->rank = $index + 1; // Rank 1, 2, 3...
+    //         return $item;
+    //     });
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $rankedStores
-        ]);
-    }
+    //     return response()->json([
+    //         'status' => 'success',
+    //         'data' => $rankedStores
+    //     ]);
+    // }
 
     // 2. API: Chi tiết KPI của 1 cửa hàng cụ thể
     public function getStoreMetrics($id)
@@ -152,14 +154,9 @@ class AnalyticsController extends Controller
     public function getAllStores()
     {
         // Dùng Query Builder lấy dữ liệu trực tiếp cho nhanh
-        $stores = DB::table('stores')
-            ->select('StoreID', 'Name', 'City', 'Country') // Chỉ lấy các cột cần thiết
-            ->orderBy('Name', 'asc') // Sắp xếp tên A-Z
-            ->get();
-
+        $stores = Store::all();
         return response()->json([
             'status' => 'success',
-            'count' => $stores->count(),
             'data' => $stores
         ]);
     }
