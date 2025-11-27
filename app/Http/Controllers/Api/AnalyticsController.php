@@ -10,6 +10,11 @@ use App\Models\Store;
 
 class AnalyticsController extends Controller
 {
+    public function viewTopStores()
+    {
+        // Trả về file view nằm trong thư mục resources/views/pages/top-stores.blade.php
+        return view('pages.top-stores');
+    }
     public function getProductAnalytics(Request $request)
     {
         // 1. Lấy tham số từ URL (nếu không có thì mặc định là null)

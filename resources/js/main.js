@@ -93,65 +93,65 @@ $(document).ready(function () {
   });
 });
 
-/* ========================= */
-/* COMPONENT LOADER          
-/* ========================= */
-$(function () {
-  const componentsPath = "../components/";
+// /* ========================= */
+// /* COMPONENT LOADER          
+// /* ========================= */
+// $(function () {
+//   const componentsPath = "../components/";
 
-  // 1. Tải Header
-  $("#app-header").load(
-    componentsPath + "header.html",
-    function (response, status, xhr) {
-      if (status == "success") {
-        initLitepicker();
-        // Đã XÓA initFilterComponent() khỏi đây
-      } else {
-        console.error(
-          "Lỗi khi tải header.html: " + xhr.status + " " + xhr.statusText
-        );
-      }
-    }
-  );
+//   // 1. Tải Header
+//   $("#app-header").load(
+//     componentsPath + "header.html",
+//     function (response, status, xhr) {
+//       if (status == "success") {
+//         initLitepicker();
+//         // Đã XÓA initFilterComponent() khỏi đây
+//       } else {
+//         console.error(
+//           "Lỗi khi tải header.html: " + xhr.status + " " + xhr.statusText
+//         );
+//       }
+//     }
+//   );
 
-  // 2. Tải Footer
-  $("#app-footer").load(componentsPath + "footer.html");
+//   // 2. Tải Footer
+//   $("#app-footer").load(componentsPath + "footer.html");
 
-  // 3. Tải Sidebar
-  $("#sidebar").load(
-    componentsPath + "sidebar.html",
-    function (response, status, xhr) {
-      if (status == "success") {
-        initSidebar();
-      } else if (status == "error") {
-        console.error(
-          "Lỗi khi tải sidebar.html: " + xhr.status + " " + xhr.statusText
-        );
-        $("#sidebar").html("<p>Lỗi tải menu. Vui lòng thử lại.</p>");
-      }
-    }
-  );
+//   // 3. Tải Sidebar
+//   $("#sidebar").load(
+//     componentsPath + "sidebar.html",
+//     function (response, status, xhr) {
+//       if (status == "success") {
+//         initSidebar();
+//       } else if (status == "error") {
+//         console.error(
+//           "Lỗi khi tải sidebar.html: " + xhr.status + " " + xhr.statusText
+//         );
+//         $("#sidebar").html("<p>Lỗi tải menu. Vui lòng thử lại.</p>");
+//       }
+//     }
+//   );
 
-  // 4. Tải FILTER (MỚI)
-  $("#filter-container").load(
-    componentsPath + "filter.html",
-    function (response, status, xhr) {
-      if (status == "success") {
-        // Chạy hàm init cho filter SAU KHI HTML của nó đã được tải
-        initFilterComponent();
-      } else if (status == "error") {
-        console.error(
-          "Lỗi khi tải filter.html: " + xhr.status + " " + xhr.statusText
-        );
-      }
-    }
-  );
+//   // 4. Tải FILTER (MỚI)
+//   $("#filter-container").load(
+//     componentsPath + "filter.html",
+//     function (response, status, xhr) {
+//       if (status == "success") {
+//         // Chạy hàm init cho filter SAU KHI HTML của nó đã được tải
+//         initFilterComponent();
+//       } else if (status == "error") {
+//         console.error(
+//           "Lỗi khi tải filter.html: " + xhr.status + " " + xhr.statusText
+//         );
+//       }
+//     }
+//   );
 
-  // chỉ chạy khi ở trang profile.html
-  if ($("main.page-profile").length > 0) {
-    initProfilePage();
-  }
-});
+//   // chỉ chạy khi ở trang profile.html
+//   if ($("main.page-profile").length > 0) {
+//     initProfilePage();
+//   }
+// });
 
 /* ========================== */
 /* SIDEBAR INTERACTIVE LOGIC  
@@ -1124,6 +1124,31 @@ Chart.defaults.plugins.tooltip.bodyFont = { size: 12, family: "Roboto" };
 $(document).ready(function () {
   if (window.location.pathname.includes("overview")) {
     initOverviewChartsFromFile();
+  }
+});
+
+// Ensure sidebar (and optional components) are initialized when DOM is ready.
+// This acts as a safe fallback when sidebar is already present in the page
+// (for example when components are not loaded via AJAX). Each init function
+// checks for necessary DOM elements before running.
+$(document).ready(function () {
+  try {
+    if (document.getElementById("sidebar")) {
+      initSidebar();
+      console.log("Fallback: initSidebar() called on DOM ready.");
+    }
+
+    if (document.getElementById("filter-container")) {
+      initFilterComponent();
+      console.log("Fallback: initFilterComponent() called on DOM ready.");
+    }
+
+    if (document.getElementById("calendarTriggerBtn")) {
+      initLitepicker();
+      console.log("Fallback: initLitepicker() called on DOM ready.");
+    }
+  } catch (e) {
+    console.error("Error during fallback init:", e);
   }
 });
 

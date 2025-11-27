@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\ProductController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -30,3 +31,14 @@ Route::get('/top-products', function () {
 Route::get('/top-category', function () {
     return view('top-category'); // Tên file view (không cần đuôi .blade.php)
 });
+
+
+Route::get('/app', function () {
+    return view('app'); // Tên file view (không cần đuôi .blade.php)
+});
+
+Route::get('/top-stores', [AnalyticsController::class, 'viewTopStores'])->name('top-stores');
+
+Route::get('/top-products', [ProductController::class, 'viewTopProducts'])->name('top-products');
+
+Route::get('/top-category', [ProductController::class, 'viewTopCategory'])->name('top-category');
