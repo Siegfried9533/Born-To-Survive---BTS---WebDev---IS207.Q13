@@ -18,9 +18,11 @@ function initTopCategory() {
     let totalDelta = 0,
       totalInstore = 0;
 
-    items.forEach((it) => {
+    items.forEach((it, idx) => {
       // Support both object items (new API with delta_gmv/instore_gmv) and plain string array (backward compat)
       let id, name, deltaNum, instoreNum, deltaDisplay, vnGrowth, instoreDisplay;
+
+      console.log(`📊 Category ${idx}:`, it); // Debug: in từng object
 
       if (typeof it === 'string' || typeof it === 'number') {
         // Simple string item -> use as name and id, no metrics available
@@ -39,6 +41,8 @@ function initTopCategory() {
         // Map delta_gmv and instore_gmv from new API, fallback to old field names
         deltaNum = Number(it.delta_gmv || it.delta || it.total_sold || it.change || 0) || 0;
         instoreNum = Number(it.instore_gmv || it.instore || it.revenue || it.value || 0) || 0;
+        
+        console.log(`   id=${id}, name=${name}, delta_gmv=${deltaNum}, instore_gmv=${instoreNum}`);
         
         // Format display values
         deltaDisplay = (deltaNum > 0 ? deltaNum.toLocaleString('en-US') : '0') + ' pts';

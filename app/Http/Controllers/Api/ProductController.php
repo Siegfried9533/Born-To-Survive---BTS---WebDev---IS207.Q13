@@ -73,23 +73,33 @@ class ProductController extends Controller
      */
     public function getCategories()
     {
-        // Lấy danh mục với Delta GMV (tổng doanh thu) và InStore GMV (doanh thu trong cửa hàng)
-        $categories = DB::table('products')
-            ->select(
-                'products.Category',
-                DB::raw('COUNT(DISTINCT products.ProdID) as product_count'),
-                DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as delta_gmv'),
-                DB::raw('COALESCE(SUM(CASE WHEN invoices.TransactionType = "In-Store" THEN (invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount ELSE 0 END), 0) as instore_gmv')
-            )
-            ->whereNotNull('products.Category')
-            ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
-            ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
-            ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
-            ->groupBy('products.Category')
-            ->orderByDesc('delta_gmv')
-            ->get();
-        
-        return response()->json(['status' => 'success', 'data' => $categories]);
+        try {
+            // Lấy danh mục với Delta GMV (tổng doanh thu) và InStore GMV (doanh thu trong cửa hàng)
+            // Delta GMV = Tổng doanh thu từ tất cả các hóa đơn
+            // InStore GMV = Tổng doanh thu từ các hóa đơn có TransactionType = "In-Store" (nếu khả dụng)
+            $categories = DB::table('products')
+                ->select(
+                    'products.Category',
+                    DB::raw('COUNT(DISTINCT products.ProdID) as product_count'),
+                    DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as delta_gmv'),
+                    // InStore GMV: tính tổng doanh thu (nếu không có TransactionType hoặc = "In-Store")
+                    DB::raw('COALESCE(SUM(CASE WHEN invoices.TransactionType IS NULL OR invoices.TransactionType = "In-Store" THEN (invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount ELSE 0 END), 0) as instore_gmv')
+                )
+                ->whereNotNull('products.Category')
+                ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
+                ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
+                ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
+                ->groupBy('products.Category')
+                ->orderByDesc('delta_gmv')
+                ->get();
+            
+            \Log::info('Categories API response:', ['categories' => $categories, 'count' => count($categories)]);
+            
+            return response()->json(['status' => 'success', 'data' => $categories]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getCategories:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
     }
 
     /**
