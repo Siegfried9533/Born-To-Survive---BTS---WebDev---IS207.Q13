@@ -42,3 +42,35 @@ Route::get('/top-stores', [AnalyticsController::class, 'viewTopStores'])->name('
 Route::get('/top-products', [ProductController::class, 'viewTopProducts'])->name('top-products');
 
 Route::get('/top-category', [ProductController::class, 'viewTopCategory'])->name('top-category');
+
+Route::get('/products', function () {
+    return view('products'); // Tên file view (không cần đuôi .blade.php)
+});
+
+
+Route::get('/customers', function () {
+    return view('pages.customers'); // Tên file view (không cần đuôi .blade.php)
+})->name('customers');
+
+
+
+Route::get('/overview', function () {
+    return view('pages.overview'); // Tên file view (không cần đuôi .blade.php)
+})->name('overview');
+
+Route::get('/sales', function () {
+    return view('pages.sales'); // Tên file view (không cần đuôi .blade.php)
+})->name('sales');
+
+
+Route::get('/report-customers', function () {
+    return view('pages.report-customers'); // Tên file view (không cần đuôi .blade.php)
+})->name('report-customers');
+
+Route::get('/report-revenues', function () {
+    return view('pages.report-revenues'); // Tên file view (không cần đuôi .blade.php)
+})->name('report-revenues');
+
+Route::get('/report-sales', function () {
+    return view('pages.report-sales'); // Tên file view (không cần đuôi .blade.php)
+})->name('report-sales');
