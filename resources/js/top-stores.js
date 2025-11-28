@@ -4,13 +4,40 @@
 console.log("🔧 top-stores.js file đã được load");
 console.log("$ jQuery available?", typeof $ !== 'undefined' ? "✅ Có" : "❌ Không");
 
-// Nếu jQuery chưa load, chờ thêm
-if (typeof $ === 'undefined') {
-  console.warn("⚠️ jQuery chưa được load, chờ 1 giây...");
-  setTimeout(initTopStores, 1000);
-} else {
-  initTopStores();
-}
+// Wait for jQuery (poll) before initializing to avoid race conditions
+(function waitForjQueryAndInit() {
+  const maxAttempts = 25; // try for ~5 seconds (25 * 200ms)
+  let attempts = 0;
+
+  function tryInit() {
+    if (typeof $ !== "undefined") {
+      try {
+        initTopStores();
+      } catch (err) {
+        console.error('Error initializing initTopStores():', err);
+      }
+
+      if (typeof initFilterComponent === 'function') {
+        try {
+          initFilterComponent();
+        } catch (err) {
+          console.error('Error initializing initFilterComponent():', err);
+        }
+      }
+      return;
+    }
+
+    attempts++;
+    if (attempts <= maxAttempts) {
+      // wait 200ms and retry
+      setTimeout(tryInit, 200);
+    } else {
+      console.error('jQuery not found after ' + attempts + ' attempts. Skipping initialization.');
+    }
+  }
+
+  tryInit();
+})();
 
 function initTopStores() {
   console.log("🚀 Bắt đầu khởi tạo Top Stores");
@@ -22,9 +49,12 @@ function initTopStores() {
   
   // 1. Thay đổi đường dẫn tới API Laravel của bạn
   // Route hiện có là /api/analytics/stores (routes/api.php)
-  const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
+  // Use window.Laravel.baseUrl when available, otherwise fall back to origin
+  const baseUrl = (window.Laravel && window.Laravel.baseUrl)
+    ? String(window.Laravel.baseUrl).replace(/\/+$/, '')
+    : window.location.origin.replace(/\/+$/, '');
   const apiUrl = `${baseUrl}/api/analytics/stores`;
-  console.log("🔗 API URL:", apiUrl); 
+  console.log("🔗 API URL:", apiUrl);
   
   let data = [];
   // Mặc định sắp xếp theo Doanh thu (allCat) giảm dần
@@ -62,22 +92,47 @@ function initTopStores() {
     }
 
     // 2. Map dữ liệu từ API sang cấu trúc của bảng cũ
+    // Helper: try multiple keys and return first existing value
+    function pick(obj, keys, fallback) {
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (obj == null) break;
+        if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== null && obj[k] !== undefined) return obj[k];
+      }
+      return fallback;
+    }
+
+    function toNumber(v, fallback = 0) {
+      if (v === null || v === undefined || v === '') return fallback;
+      const n = Number(v);
+      return isNaN(n) ? fallback : n;
+    }
+
     data = apiData.map(item => {
+        const id = String(pick(item, ['StoreID','store_id','id','StoreId'], '') || '').trim();
+        const name = String(pick(item, ['Name','name','StoreName','store_name'], '') || '').trim();
+        const city = String(pick(item, ['City','city','Town','town'], '') || '').trim();
+        const country = String(pick(item, ['Country','country','country_code'], 'VN') || 'VN').trim();
+        const zip = String(pick(item, ['ZIPCode','zip','zip_code','postalCode'], '') || '').trim();
+
+        const latRaw = pick(item, ['Latitude','latitude','Lat','lat'], 0);
+        const lngRaw = pick(item, ['Longitude','longitude','Lng','lng'], 0);
+        const lat = toNumber(latRaw, 0);
+        const lng = toNumber(lngRaw, 0);
+
+        const revenueRaw = pick(item, ['revenue','Revenue','total_revenue','totalRevenue','allCat'], 0);
+        const allCat = toNumber(revenueRaw, 0);
+
         return {
-            id: item.StoreID,           // Từ API
-            name: item.Name,            // Từ API
-            city: item.City,            // Từ API
-            country: item.Country || 'VN', // Nếu API thiếu thì mặc định VN
-            zip: item.ZIPCode || '',    
-            // Nếu API chưa trả về Lat/Lng thì để mặc định 0 để không lỗi bảng
-            lat: parseFloat(item.Latitude || 0), 
-            lng: parseFloat(item.Longitude || 0),
-            
-            // Giả sử catSelected là doanh thu lọc theo danh mục (tạm thời để 0 hoặc bằng tổng)
-            catSelected: 0, 
-            
-            // Map doanh thu từ API vào cột allCat
-            allCat: parseInt(item.revenue || 0) 
+            id: id,
+            name: name || id || 'Unknown Store',
+            city: city,
+            country: country || 'VN',
+            zip: zip,
+            lat: lat,
+            lng: lng,
+            catSelected: 0,
+            allCat: allCat
         };
     });
 

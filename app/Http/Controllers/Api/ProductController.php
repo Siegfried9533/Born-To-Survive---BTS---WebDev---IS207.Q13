@@ -10,16 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
-    public function viewTopProducts()
-    {
-        // Trả về file view nằm trong thư mục resources/views/pages/top-stores.blade.php
-        return view('pages.top-products');
-    }
-    public function viewTopCategory()
-    {
-        // Trả về file view nằm trong thư mục resources/views/pages/top-stores.blade.php
-        return view('pages.top-stores');
-    }
+
     /**
      * 1. GET /api/products
      * Lấy danh sách sản phẩm (Có phân trang)

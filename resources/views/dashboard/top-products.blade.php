@@ -49,4 +49,5 @@
 
 @push('scripts')
     @vite('resources/js/top-products.js')
+    @vite('resources/js/filter-component.js')
 @endpush
