@@ -22,7 +22,8 @@ function initTopStores() {
   
   // 1. Thay đổi đường dẫn tới API Laravel của bạn
   // Route hiện có là /api/analytics/stores (routes/api.php)
-  const apiUrl = "/api/analytics/stores";
+  const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
+  const apiUrl = `${baseUrl}/api/analytics/stores`;
   console.log("🔗 API URL:", apiUrl); 
   
   let data = [];

@@ -11,21 +11,21 @@ Route::view('/auth/sign-up', 'auth.sign-up');
 Route::view('/auth/reset-pwd', 'auth.reset-pwd');
 Route::view('/auth/forgot-pwd', 'auth.forgot-pwd');
 //customer
-Route::view('/customers/customers', 'customers.customers');
-Route::view('/customers/report-customers', 'customers.report-customers');
+Route::view('/customers/customers', 'customers.customers')->name('customers.index');
+Route::view('/customers/report-customers', 'customers.report-customers')->name('reports.customers');
 //dashboard
-Route::view('/dashboard/overview', 'dashboard.overview');
-Route::view('/dashboard/gauge', 'dashboard.gauge');
-Route::view('/dashboard/top-category', 'dashboard.top-category');
-Route::view('/dashboard/top-products', 'dashboard.top-products');
-Route::view('/dashboard/top-stores', 'dashboard.top-stores');
+Route::view('/dashboard/overview', 'dashboard.overview')->name('dashboard.overview');
+Route::view('/dashboard/gauge', 'dashboard.gauge')->name('dashboard.gauge');
+Route::view('/dashboard/top-category', 'dashboard.top-category')->name('products.top-category');
+Route::view('/dashboard/top-products', 'dashboard.top-products')->name('products.top-products');
+Route::view('/dashboard/top-stores', 'dashboard.top-stores')->name('top-stores');
 //profile
 Route::view('/profile', 'profile.profile');
 //revenue
-Route::view('/revenue/report-revenues', 'revenue.report-revenues');
+Route::view('/revenue/report-revenues', 'revenue.report-revenues')->name('reports.revenues');
 //sales
-Route::view('/sales/report-sales', 'sales.report-sales');
-Route::view('/sales/sales', 'sales.sales');
+Route::view('/sales/report-sales', 'sales.report-sales')->name('reports.sales');
+Route::view('/sales/sales', 'sales.sales')->name('sales.index');
 
 // Serve fake-data files from database/fake-data (safe whitelist)
 Route::get('/fake-data/{filename}', function ($filename) {

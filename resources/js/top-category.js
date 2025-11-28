@@ -6,7 +6,8 @@ function initTopCategory() {
   if ($("#topCategoryTable").length === 0) return;
 
   // Lấy dữ liệu từ API categories
-  const apiUrl = "/api/products/categories";
+  const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
+  const apiUrl = `${baseUrl}/api/products/categories`;
   console.log("🔗 Lấy dữ liệu Top Category từ API:", apiUrl);
   $.get(apiUrl, function (response) {
     console.log("✅ API categories response:", response);

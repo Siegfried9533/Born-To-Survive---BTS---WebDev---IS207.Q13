@@ -25,8 +25,5 @@ Route::get('/analytics/stores', [AnalyticsController::class, 'getAllStores']);
 Route::get('/products/categories', [ProductController::class, 'getCategories']);
 
 // 2. Route CRUD chuẩn (Index, Store, Show, Update, Destroy)
-// Nó sẽ tự tạo: GET /products, POST /products, GET /products/{id}...
-// Route::apiResource('products', ProductController::class);
-
 
 Route::get('/analytics/products', [AnalyticsController::class, 'getProductAnalytics']);

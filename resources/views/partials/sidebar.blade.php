@@ -6,7 +6,7 @@
 <ul class="sidebar-menu">
 
     <li class="menu-item">
-        <a href="{{ route('overview')}}" class="menu-link">
+        <a href="{{ route('dashboard.overview')}}" class="menu-link">
             <div class="menu-icon-bg">
                 <i class="fa-solid fa-house"></i>
             </div>
@@ -15,7 +15,7 @@
     </li>
 
     <li class="menu-item">
-        <a href="{{ route('sales')}}" class="menu-link">
+        <a href="{{ route('reports.sales')}}" class="menu-link">
             <div class="menu-icon-bg">
                 <i class="fa-solid fa-users"></i>
             </div>
@@ -24,7 +24,7 @@
     </li>
 
     <li class="menu-item">
-        <a href="{{ route('customers')}}" class="menu-link">
+        <a href="{{ route('customers.index')}}" class="menu-link">
             <div class="menu-icon-bg">
                 <i class="fa-solid fa-users"></i>
             </div>
@@ -41,8 +41,8 @@
             <i class="fa-solid fa-chevron-up toggle-icon"></i>
         </a>
         <ul class="submenu">
-            <li class="submenu-item"><a href="/top-category">Top Category</a></li>
-            <li class="submenu-item"><a href="/top-products">Top Products</a></li>
+            <li class="submenu-item"><a href="{{ route('products.top-category') }}">Top Category</a></li>
+            <li class="submenu-item"><a href="{{ route('products.top-products') }}">Top Products</a></li>
         </ul>
     </li>
 
@@ -69,10 +69,10 @@
             <i class="fa-solid fa-chevron-up toggle-icon"></i>
         </a>
         <ul class="submenu">
-            <li class="submenu-item"><a href="{{ route('report-revenues')}}">Revenues</a></li>
+            <li class="submenu-item"><a href="{{ route('reports.revenues')}}">Revenues</a></li>
             <li class="submenu-item"><a href="#">Orders</a></li>
-            <li class="submenu-item"><a href="{{ route('report-sales')}}">Sales</a></li>
-            <li class="submenu-item"><a href="{{ route('report-customers')}}">Customers</a></li>
+            <li class="submenu-item"><a href="{{ route('reports.sales')}}">Sales</a></li>
+            <li class="submenu-item"><a href="{{ route('reports.customers')}}">Customers</a></li>
             <li class="submenu-item"><a href="#">Prediction</a></li>
         </ul>
     </li>

@@ -6,7 +6,8 @@ function initTopProducts() {
   if ($("#topProductsTable").length === 0) return;
 
   // Lấy dữ liệu từ API getProductAnalytics
-  const apiUrl = "/api/analytics/products";
+  const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
+  const apiUrl = `${baseUrl}/api/analytics/products`;
   console.log("🔗 Lấy dữ liệu Top Products từ API:", apiUrl);
   $.get(apiUrl, function (response) {
     // API trả về: { status: 'success', filters: {...}, data: [...] }
