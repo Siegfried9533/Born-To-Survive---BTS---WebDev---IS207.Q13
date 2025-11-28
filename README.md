@@ -1,4 +1,4 @@
-<p align="center"><img src="D:\laragon\www\fashion-business-data-analysis-dashboard\Born-To-Survive---BTS---WebDev---IS207.Q13\public\images\Logo-02.png" width="400" alt="Laravel Logo"></a></p>
+<p align="center"><img src="public/images/Logo-02.png" width="400" alt="Laravel Logo"></a></p>
 
 ## Born To Survive — Fashion Business Data Analysis Dashboard
 
