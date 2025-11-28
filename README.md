@@ -1,18 +1,20 @@
-**Born To Survive — Fashion Business Data Analysis Dashboard**
+<p align="center"><img src="D:\laragon\www\fashion-business-data-analysis-dashboard\Born-To-Survive---BTS---WebDev---IS207.Q13\public\images\Logo-02.png" width="400" alt="Laravel Logo"></a></p>
 
-Mô tả:
+## Born To Survive — Fashion Business Data Analysis Dashboard
+
+#### Mô tả:
 
 -   Đây là một ứng dụng dashboard phân tích dữ liệu kinh doanh thời trang được xây dựng trên nền tảng Laravel (PHP). Mục tiêu của dự án là hiển thị các báo cáo, biểu đồ và bảng dữ liệu liên quan đến doanh thu, doanh số, khách hàng, cửa hàng và sản phẩm hàng đầu, phục vụ mục đích phân tích kinh doanh.
 -   Ứng dụng bao gồm các chức năng chính: xác thực người dùng, trang dashboard tổng quan, trang quản lý khách hàng, báo cáo doanh thu, bảng xếp hạng sản phẩm/danh mục, và giao diện quản lý profile.
 
-Ngăn xếp công nghệ chính:
+#### Ngăn xếp công nghệ chính:
 
 -   Backend: PHP 8.x, Laravel
 -   Frontend: Blade templates, vanilla JS, CSS (kèm Vite để build assets)
 -   Database: SQLite/MySQL (cấu hình trong `.env`)
 -   Build & quản lý gói: Composer, NPM/Yarn, Vite
 
-Cấu trúc thư mục (tóm tắt):
+#### Cấu trúc thư mục (tóm tắt):
 
 -   `app/` — mã nguồn ứng dụng (Controllers, Models, Providers, ...)
 -   `routes/` — định nghĩa route (`web.php`, `console.php`)
@@ -23,7 +25,7 @@ Cấu trúc thư mục (tóm tắt):
 -   `config/` — cấu hình ứng dụng
 -   `vendor/` — dependencies do Composer quản lý
 
-Hướng dẫn cài đặt & chạy (Windows + Bash, phù hợp với Laragon hoặc môi trường PHP-FPM):
+#### Hướng dẫn cài đặt & chạy (Windows + Bash, phù hợp với Laragon hoặc môi trường PHP-FPM):
 
 1. Chuẩn bị môi trường
 
@@ -88,7 +90,7 @@ php artisan serve --host=127.0.0.1 --port=8000
 
 Ghi chú: Nếu bạn dùng Laragon, có thể cấu hình host và dùng Apache/Nginx cài sẵn, sau đó trỏ DocumentRoot tới `public/` của project.
 
-Các lệnh hữu ích khác
+#### Các lệnh hữu ích khác
 
 -   Cài dependencies Composer:
 
@@ -117,20 +119,13 @@ php artisan view:clear
 php artisan cache:clear
 ```
 
-Thông tin quan trọng và mẹo
+#### Thông tin quan trọng và mẹo
 
 -   Kiểm tra file `.env` trước khi chạy migrations để tránh mất dữ liệu trên DB sai.
 -   Nếu bạn gặp lỗi quyền (permission) trên `storage/` hoặc `bootstrap/cache/`, hãy cấp quyền ghi cho user PHP.
 -   Nếu cần khôi phục dữ liệu mẫu, kiểm tra `database/fake-data/` và `database/seeders/`.
 
-Hỗ trợ & Phát triển
-
--   Nếu bạn muốn mình giúp cấu hình môi trường cụ thể (Laragon, XAMPP, Docker), cho biết bạn đang dùng gì và mình sẽ hướng dẫn chi tiết.
--   Muốn mình tạo các lệnh npm/composer kèm script deploy hoặc CI/CD, mình có thể bổ sung.
-
 ---
-
-Tệp README này đã được viết lại bằng tiếng Việt để mô tả mục đích dự án và hướng dẫn chạy cơ bản. Nếu bạn muốn thêm phần mô tả chi tiết về từng route, tên các controller hoặc screenshot giao diện, mình sẽ mở rộng tiếp.
 
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
