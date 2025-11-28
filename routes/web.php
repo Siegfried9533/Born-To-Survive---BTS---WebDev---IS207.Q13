@@ -4,73 +4,48 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\ProductController;
 Route::get('/', function () {
-    return view('welcome');
+    return view('auth.sign-up');
 });
+// auth
+Route::view('/auth/sign-up', 'auth.sign-up');
+Route::view('/auth/reset-pwd', 'auth.reset-pwd');
+Route::view('/auth/forgot-pwd', 'auth.forgot-pwd');
+//customer
+Route::view('/customers/customers', 'customers.customers');
+Route::view('/customers/report-customers', 'customers.report-customers');
+//dashboard
+Route::view('/dashboard/overview', 'dashboard.overview');
+Route::view('/dashboard/gauge', 'dashboard.gauge');
+Route::view('/dashboard/top-category', 'dashboard.top-category');
+Route::view('/dashboard/top-products', 'dashboard.top-products');
+Route::view('/dashboard/top-stores', 'dashboard.top-stores');
+//profile
+Route::view('/profile', 'profile.profile');
+//revenue
+Route::view('/revenue/report-revenues', 'revenue.report-revenues');
+//sales
+Route::view('/sales/report-sales', 'sales.report-sales');
+Route::view('/sales/sales', 'sales.sales');
 
-Route::get('/index', function () {
-    return view('index'); // Tên file view (không cần đuôi .blade.php)
-});
+// Serve fake-data files from database/fake-data (safe whitelist)
+Route::get('/fake-data/{filename}', function ($filename) {
+    $allowed = [
+        'overview-data.txt',
+        'growth-data.txt',
+        'top-category-data.txt',
+        'top-products-data.txt',
+        'customers-data.txt',
+        'stores-data.txt',
+    ];
 
-Route::get('/overview', function () {
-    return view('overview'); // Tên file view (không cần đuôi .blade.php)
-});
+    if (! in_array($filename, $allowed, true)) {
+        abort(404);
+    }
 
+    $path = database_path('fake-data/' . $filename);
+    if (! file_exists($path)) {
+        abort(404);
+    }
 
-Route::get('/profile', function () {
-    return view('profile'); // Tên file view (không cần đuôi .blade.php)
-});
-
-Route::get('/top-stores', function () {
-    return view('top-stores'); // Tên file view (không cần đuôi .blade.php)
-});
-
-Route::get('/top-products', function () {
-    return view('top-products'); // Tên file view (không cần đuôi .blade.php)
-});
-
-Route::get('/top-category', function () {
-    return view('top-category'); // Tên file view (không cần đuôi .blade.php)
-});
-
-
-Route::get('/app', function () {
-    return view('app'); // Tên file view (không cần đuôi .blade.php)
-});
-
-Route::get('/top-stores', [AnalyticsController::class, 'viewTopStores'])->name('top-stores');
-
-Route::get('/top-products', [ProductController::class, 'viewTopProducts'])->name('top-products');
-
-Route::get('/top-category', [ProductController::class, 'viewTopCategory'])->name('top-category');
-
-Route::get('/products', function () {
-    return view('products'); // Tên file view (không cần đuôi .blade.php)
-});
-
-
-Route::get('/customers', function () {
-    return view('pages.customers'); // Tên file view (không cần đuôi .blade.php)
-})->name('customers');
-
-
-
-Route::get('/overview', function () {
-    return view('pages.overview'); // Tên file view (không cần đuôi .blade.php)
-})->name('overview');
-
-Route::get('/sales', function () {
-    return view('pages.sales'); // Tên file view (không cần đuôi .blade.php)
-})->name('sales');
-
-
-Route::get('/report-customers', function () {
-    return view('pages.report-customers'); // Tên file view (không cần đuôi .blade.php)
-})->name('report-customers');
-
-Route::get('/report-revenues', function () {
-    return view('pages.report-revenues'); // Tên file view (không cần đuôi .blade.php)
-})->name('report-revenues');
-
-Route::get('/report-sales', function () {
-    return view('pages.report-sales'); // Tên file view (không cần đuôi .blade.php)
-})->name('report-sales');
+    return response()->file($path, ['Content-Type' => 'text/plain']);
+})->where('filename', '[A-Za-z0-9_\-\.]+');
