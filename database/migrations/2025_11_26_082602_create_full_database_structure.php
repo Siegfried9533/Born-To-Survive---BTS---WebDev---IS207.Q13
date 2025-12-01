@@ -40,7 +40,7 @@ return new class extends Migration
         Schema::create('customers', function (Blueprint $table) {
             $table->string('CusID', 10)->primary();
             $table->string('Name', 255);
-            $table->string('Phone', 10)->nullable();
+            $table->string('Phone', 255)->nullable();
             $table->string('Email', 255)->nullable();
             $table->string('City', 50)->nullable();
             $table->string('Country', 50)->nullable();
