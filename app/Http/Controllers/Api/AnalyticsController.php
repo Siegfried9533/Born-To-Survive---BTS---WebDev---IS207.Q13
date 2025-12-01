@@ -67,13 +67,15 @@ class AnalyticsController extends Controller
         ]);
     }
     /**
-     * 3. API: Lấy dữ liệu product theo filter stores & categories
-     * GET /api/analytics/products/filter?stores=S001,S002&categories=Cat1,Cat2
+     * 3. API: Lấy dữ liệu product theo filter stores & categories & dates
+     * GET /api/analytics/products/filter?stores=S001,S002&categories=Cat1,Cat2&from_date=2025-01-01&to_date=2025-12-31
      */
     public function getProductAnalyticsFiltered(Request $request)
     {
         $stores = $request->query('stores');
         $categories = $request->query('categories');
+        $fromDate = $request->query('from_date');
+        $toDate = $request->query('to_date');
 
         $storeIds = [];
         if ($stores) {
@@ -98,6 +100,15 @@ class AnalyticsController extends Controller
             $query->whereIn('products.Category', $categoryList);
         }
 
+        // Filter by date range
+        if ($fromDate) {
+            $query->whereDate('invoices.Date', '>=', $fromDate);
+        }
+
+        if ($toDate) {
+            $query->whereDate('invoices.Date', '<=', $toDate);
+        }
+
         $products = $query->select(
                 'products.ProdID',
                 'products.Description as ProductName',
@@ -113,20 +124,24 @@ class AnalyticsController extends Controller
             'status' => 'success',
             'filters' => [
                 'stores' => $storeIds,
-                'categories' => $categoryList
+                'categories' => $categoryList,
+                'from_date' => $fromDate,
+                'to_date' => $toDate
             ],
             'data' => $products
         ]);
     }
 
     /**
-     * 4. API: Lấy dữ liệu tổng hợp theo category (product_count, delta_gmv)
-     * GET /api/analytics/categories/summary?stores=S001,S002&categories=Cat1,Cat2
+     * 4. API: Lấy dữ liệu tổng hợp theo category (product_count, delta_gmv) với filter ngày
+     * GET /api/analytics/categories/summary?stores=S001,S002&categories=Cat1,Cat2&from_date=2025-01-01&to_date=2025-12-31
      */
     public function getCategorySummary(Request $request)
     {
         $stores = $request->query('stores');
         $categories = $request->query('categories');
+        $fromDate = $request->query('from_date');
+        $toDate = $request->query('to_date');
 
         $storeIds = [];
         if ($stores) {
@@ -157,6 +172,15 @@ class AnalyticsController extends Controller
             $query->whereIn('products.Category', $categoryList);
         }
 
+        // Filter by date range
+        if ($fromDate) {
+            $query->whereDate('invoices.Date', '>=', $fromDate);
+        }
+
+        if ($toDate) {
+            $query->whereDate('invoices.Date', '<=', $toDate);
+        }
+
         $categoriesData = $query->groupBy('products.Category')
             ->orderByDesc('delta_gmv')
             ->get();
@@ -165,7 +189,9 @@ class AnalyticsController extends Controller
             'status' => 'success',
             'filters' => [
                 'stores' => $storeIds,
-                'categories' => $categoryList
+                'categories' => $categoryList,
+                'from_date' => $fromDate,
+                'to_date' => $toDate
             ],
             'data' => $categoriesData
         ]);

@@ -12,11 +12,13 @@ class StoreController extends Controller
 {
     /**
      * 0. Lấy dữ liệu Store và Category theo yêu cầu
-     * GET /api/stores/dashboard/summary?stores=S001,S002&categories=Thời%20trang,Điện%20tử
+     * GET /api/stores/dashboard/summary?stores=S001,S002&categories=Thời%20trang,Điện%20tử&from_date=2025-01-01&to_date=2025-12-31
      * 
      * Query params:
      *   - stores: comma-separated store IDs (optional, max 3)
      *   - categories: comma-separated category names (optional)
+     *   - from_date: start date in YYYY-MM-DD format (optional)
+     *   - to_date: end date in YYYY-MM-DD format (optional)
      * 
      * Response:
      * {
@@ -52,14 +54,18 @@ class StoreController extends Controller
                 $categories = array_filter(array_map('trim', explode(',', $request->query('categories'))));
             }
 
-            // 3. Lấy dữ liệu Stores
+            // 3. Lấy date range từ query param
+            $fromDate = $request->query('from_date');
+            $toDate = $request->query('to_date');
+
+            // 4. Lấy dữ liệu Stores
             $storeQuery = Store::query();
             if (!empty($storeIds)) {
                 $storeQuery->whereIn('StoreID', $storeIds);
             }
             $stores = $storeQuery->orderByDesc('StoreID')->get();
 
-            // 4. Lấy dữ liệu Categories với metrics
+            // 5. Lấy dữ liệu Categories với metrics
             $categoryQuery = DB::table('products')
                 ->select(
                     'products.Category',
@@ -77,12 +83,21 @@ class StoreController extends Controller
                 $categoryQuery->whereIn('products.Category', $categories);
             }
 
+            // Filter by date range
+            if ($fromDate) {
+                $categoryQuery->whereDate('invoices.Date', '>=', $fromDate);
+            }
+
+            if ($toDate) {
+                $categoryQuery->whereDate('invoices.Date', '<=', $toDate);
+            }
+
             $categoriesData = $categoryQuery
                 ->groupBy('products.Category')
                 ->orderByDesc('delta_gmv')
                 ->get();
 
-            // 5. Lấy metrics cho mỗi store (nếu có)
+            // 6. Lấy metrics cho mỗi store (nếu có)
             $storesWithMetrics = [];
             if ($stores->count() > 0) {
                 foreach ($stores as $store) {
@@ -102,6 +117,15 @@ class StoreController extends Controller
                         $storeCategories->whereIn('products.Category', $categories);
                     }
 
+                    // Filter by date range
+                    if ($fromDate) {
+                        $storeCategories->whereDate('invoices.Date', '>=', $fromDate);
+                    }
+
+                    if ($toDate) {
+                        $storeCategories->whereDate('invoices.Date', '<=', $toDate);
+                    }
+
                     $storeCategoryData = $storeCategories
                         ->groupBy('products.Category')
                         ->orderByDesc('revenue')
@@ -116,6 +140,12 @@ class StoreController extends Controller
 
             return response()->json([
                 'status' => 'success',
+                'filters' => [
+                    'stores' => $storeIds,
+                    'categories' => $categories,
+                    'from_date' => $fromDate,
+                    'to_date' => $toDate
+                ],
                 'summary' => [
                     'stores_count' => $stores->count(),
                     'categories_count' => $categoriesData->count()

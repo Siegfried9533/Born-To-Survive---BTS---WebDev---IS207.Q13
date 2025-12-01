@@ -220,8 +220,74 @@ function initTopStores() {
     sortAndRender(currentSort.col, currentSort.asc);
   });
 
+  // ============= HELPER: Validate and extract date params from header =============
+  function validateAndGetDateParams() {
+    const startDateHidden = document.getElementById('startDate');
+    const endDateHidden = document.getElementById('endDate');
+    
+    if (!startDateHidden || !endDateHidden) {
+      console.warn('⚠️ Date inputs not found in header');
+      return { valid: false, message: 'Không tìm thấy trường ngày trong header', params: [] };
+    }
+
+    const startVal = (startDateHidden.value || '').trim();
+    const endVal = (endDateHidden.value || '').trim();
+
+    // If both empty, allow (no date filter)
+    if (!startVal && !endVal) {
+      console.log('✅ No date filter applied');
+      return { valid: true, message: '', params: [] };
+    }
+
+    // If one is empty, error
+    if (!startVal || !endVal) {
+      const msg = !startVal ? 'Vui lòng chọn ngày bắt đầu' : 'Vui lòng chọn ngày kết thúc';
+      console.warn('⚠️ ' + msg);
+      return { valid: false, message: msg, params: [] };
+    }
+
+    // Parse dates in DD-MM-YYYY format (stored in hidden inputs)
+    const startParts = startVal.split('-');
+    const endParts = endVal.split('-');
+    
+    if (startParts.length !== 3 || endParts.length !== 3) {
+      console.warn('⚠️ Invalid date format');
+      return { valid: false, message: 'Định dạng ngày không hợp lệ', params: [] };
+    }
+
+    const startDate = new Date(startParts[2], startParts[1] - 1, startParts[0]); // YYYY, MM-1, DD
+    const endDate = new Date(endParts[2], endParts[1] - 1, endParts[0]);
+
+    // Check if dates are valid
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      console.warn('⚠️ Invalid date values');
+      return { valid: false, message: 'Giá trị ngày không hợp lệ', params: [] };
+    }
+
+    // Check if startDate <= endDate
+    if (startDate > endDate) {
+      console.warn('⚠️ Start date is after end date');
+      return { valid: false, message: 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc', params: [] };
+    }
+
+    console.log('✅ Date range valid:', { startDate, endDate });
+    
+    // Return as YYYY-MM-DD format for API
+    const startFormatted = `${startParts[2]}-${startParts[1]}-${startParts[0]}`;
+    const endFormatted = `${endParts[2]}-${endParts[1]}-${endParts[0]}`;
+    
+    return {
+      valid: true,
+      message: '',
+      params: [
+        { key: 'from_date', value: startFormatted },
+        { key: 'to_date', value: endFormatted }
+      ]
+    };
+  }
+
   // ============= FILTER: Call dashboard summary and re-render =============
-  function buildSummaryApiUrl(selectedStores, selectedCategories) {
+  function buildSummaryApiUrl(selectedStores, selectedCategories, dateParams = []) {
     const base = (window.Laravel && window.Laravel.baseUrl)
       ? String(window.Laravel.baseUrl).replace(/\/+$/, '')
       : window.location.origin.replace(/\/+$/, '');
@@ -229,11 +295,22 @@ function initTopStores() {
     const params = [];
     if (selectedStores && selectedStores.length) params.push('stores=' + encodeURIComponent(selectedStores.join(',')));
     if (selectedCategories && selectedCategories.length) params.push('categories=' + encodeURIComponent(selectedCategories.join(',')));
+    if (dateParams && dateParams.length) {
+      dateParams.forEach(p => params.push(p.key + '=' + encodeURIComponent(p.value)));
+    }
     if (params.length) url += '?' + params.join('&');
     return url;
   }
 
   function fetchSummaryAndRender() {
+    // Validate dates first
+    const dateCheck = validateAndGetDateParams();
+    if (!dateCheck.valid) {
+      console.error('❌ Date validation failed:', dateCheck.message);
+      $tbody.html(`<tr><td colspan="10" class="text-center text-danger">❌ ${dateCheck.message}</td></tr>`);
+      return;
+    }
+
     // determine selected stores (prefer data-store-id, then parse label 'Name - ID', then fallback to value)
     function extractStoreId($input) {
       // 1) data-store-id attribute
@@ -278,7 +355,7 @@ function initTopStores() {
     // categories (category group has id 'category-filter-group')
     const selectedCategories = $('#category-filter-group').find('input[type=checkbox]:checked').map(function(){ return $(this).val(); }).get();
 
-    const url = buildSummaryApiUrl(selectedStores, selectedCategories);
+    const url = buildSummaryApiUrl(selectedStores, selectedCategories, dateCheck.params);
     console.log('📡 Fetching dashboard summary:', url);
 
     $tbody.html(`<tr><td colspan="10" class="text-center">Đang tải dữ liệu...</td></tr>`);
