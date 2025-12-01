@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CustomersController;
 use App\Http\Controllers\Api\SalesController;
@@ -43,3 +44,6 @@ Route::get('/stores/{id}/metrics', [AnalyticsController::class, 'getStoreMetrics
 
 Route::get('/stores/{id}/employees', [StoreController::class, 'getEmployees']);
 Route::put('/stores/{id}', [StoreController::class, 'update']);
+
+
+Route::get('/dashboard/overview', [DashboardController::class, 'index']);
