@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ChatBoxController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
+use App\Http\Controllers\Api\ExportController;
 
 // API Routes - analytics, customers, sales, chatbox
 Route::prefix('analytics')->group(function () {
@@ -47,3 +48,7 @@ Route::put('/stores/{id}', [StoreController::class, 'update']);
 
 
 Route::get('/dashboard/overview', [DashboardController::class, 'index']);
+
+// API chung để export CSV: /api/export/{type}
+// Hỗ trợ trước: customers, stores, products, invoices
+Route::get('/export/{type}', [ExportController::class, 'export']);
