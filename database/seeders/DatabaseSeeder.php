@@ -15,11 +15,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // 1. Tạo Khách hàng
+    \App\Models\Customers::factory(50)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+    // 2. Tạo Hóa đơn và Chi tiết
+    \App\Models\Invoices::factory(50)->create()->each(function ($invoice) {
+        // Tạo 3 dòng chi tiết cho mỗi hóa đơn.
+        // Sử dụng ->sequence() để ép buộc cột Line lần lượt là '1', '2', '3'
+        \App\Models\InvoiceLines::factory()
+            ->count(3)
+            ->sequence(
+                ['Line' => '1'],
+                ['Line' => '2'],
+                ['Line' => '3']
+            )
+            ->create([
+                'InvoiceID' => $invoice->InvoiceID
+            ]);
+        // --------------------
+    });
     }
 }
