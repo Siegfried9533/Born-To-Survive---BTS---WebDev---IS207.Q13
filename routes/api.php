@@ -36,3 +36,6 @@ Route::get('/stores/{id}/metrics', [AnalyticsController::class, 'getStoreMetrics
 Route::get('/stores/{id}/employees', [StoreController::class, 'getEmployees']);
 // Cập nhật cửa hàng
 Route::put('/stores/{id}', [StoreController::class, 'update']);
+
+
+
