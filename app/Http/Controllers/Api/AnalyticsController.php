@@ -66,6 +66,110 @@ class AnalyticsController extends Controller
             'data' => $products
         ]);
     }
+    /**
+     * 3. API: Lấy dữ liệu product theo filter stores & categories
+     * GET /api/analytics/products/filter?stores=S001,S002&categories=Cat1,Cat2
+     */
+    public function getProductAnalyticsFiltered(Request $request)
+    {
+        $stores = $request->query('stores');
+        $categories = $request->query('categories');
+
+        $storeIds = [];
+        if ($stores) {
+            $storeIds = array_filter(array_map('trim', explode(',', $stores)));
+        }
+
+        $categoryList = [];
+        if ($categories) {
+            $categoryList = array_filter(array_map('trim', explode(',', $categories)));
+        }
+
+        $query = DB::table('products')
+            ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
+            ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
+            ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID');
+
+        if (!empty($storeIds)) {
+            $query->whereIn('invoices.StoreID', $storeIds);
+        }
+
+        if (!empty($categoryList)) {
+            $query->whereIn('products.Category', $categoryList);
+        }
+
+        $products = $query->select(
+                'products.ProdID',
+                'products.Description as ProductName',
+                'products.Category',
+                DB::raw('COALESCE(SUM(invoice_lines.Quantity), 0) as total_sold'),
+                DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as revenue')
+            )
+            ->groupBy('products.ProdID', 'products.Description', 'products.Category')
+            ->orderByDesc('revenue')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'filters' => [
+                'stores' => $storeIds,
+                'categories' => $categoryList
+            ],
+            'data' => $products
+        ]);
+    }
+
+    /**
+     * 4. API: Lấy dữ liệu tổng hợp theo category (product_count, delta_gmv)
+     * GET /api/analytics/categories/summary?stores=S001,S002&categories=Cat1,Cat2
+     */
+    public function getCategorySummary(Request $request)
+    {
+        $stores = $request->query('stores');
+        $categories = $request->query('categories');
+
+        $storeIds = [];
+        if ($stores) {
+            $storeIds = array_filter(array_map('trim', explode(',', $stores)));
+        }
+
+        $categoryList = [];
+        if ($categories) {
+            $categoryList = array_filter(array_map('trim', explode(',', $categories)));
+        }
+
+        $query = DB::table('products')
+            ->select(
+                'products.Category',
+                DB::raw('COUNT(DISTINCT products.ProdID) as product_count'),
+                DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as delta_gmv')
+            )
+            ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
+            ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
+            ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
+            ->whereNotNull('products.Category');
+
+        if (!empty($storeIds)) {
+            $query->whereIn('invoices.StoreID', $storeIds);
+        }
+
+        if (!empty($categoryList)) {
+            $query->whereIn('products.Category', $categoryList);
+        }
+
+        $categoriesData = $query->groupBy('products.Category')
+            ->orderByDesc('delta_gmv')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'filters' => [
+                'stores' => $storeIds,
+                'categories' => $categoryList
+            ],
+            'data' => $categoriesData
+        ]);
+    }
     // // 1. API: So sánh hiệu suất các cửa hàng (Ranking)
     // public function getStoreComparison()
     // {

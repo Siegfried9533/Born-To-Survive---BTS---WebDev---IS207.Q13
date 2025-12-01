@@ -34,8 +34,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/analytics/stores', [AnalyticsController::class, 'getAllStores']); 
 Route::get('/products/categories', [ProductController::class, 'getCategories']);
+Route::get('/products/categories/summary', [ProductController::class, 'getCategorySummary']);
+Route::get('/products/product/summary', [ProductController::class, 'getProductAnalyticsFiltered']);
+
 Route::apiResource('products', ProductController::class);
 
+Route::get('/stores/dashboard/summary', [StoreController::class, 'getDashboardSummary']);
 
 Route::get('/analytics/products', [AnalyticsController::class, 'getProductAnalytics']);
 Route::get('/stores/{id}/metrics', [AnalyticsController::class, 'getStoreMetrics']);

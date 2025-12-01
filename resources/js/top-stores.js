@@ -57,6 +57,21 @@ function initTopStores() {
   console.log("🔗 API URL:", apiUrl);
   
   let data = [];
+  // Helper: try multiple keys and return first existing value
+  function pick(obj, keys, fallback) {
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      if (obj == null) break;
+      if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== null && obj[k] !== undefined) return obj[k];
+    }
+    return fallback;
+  }
+
+  function toNumber(v, fallback = 0) {
+    if (v === null || v === undefined || v === '') return fallback;
+    const n = Number(v);
+    return isNaN(n) ? fallback : n;
+  }
   // Mặc định sắp xếp theo Doanh thu (allCat) giảm dần
   let currentSort = { col: "allCat", asc: false };
 
@@ -92,22 +107,7 @@ function initTopStores() {
     }
 
     // 2. Map dữ liệu từ API sang cấu trúc của bảng cũ
-    // Helper: try multiple keys and return first existing value
-    function pick(obj, keys, fallback) {
-      for (let i = 0; i < keys.length; i++) {
-        const k = keys[i];
-        if (obj == null) break;
-        if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== null && obj[k] !== undefined) return obj[k];
-      }
-      return fallback;
-    }
-
-    function toNumber(v, fallback = 0) {
-      if (v === null || v === undefined || v === '') return fallback;
-      const n = Number(v);
-      return isNaN(n) ? fallback : n;
-    }
-
+    // 2. Map dữ liệu từ API sang cấu trúc của bảng cũ
     data = apiData.map(item => {
         const id = String(pick(item, ['StoreID','store_id','id','StoreId'], '') || '').trim();
         const name = String(pick(item, ['Name','name','StoreName','store_name'], '') || '').trim();
@@ -218,6 +218,125 @@ function initTopStores() {
       currentSort = { col: col, asc: false };
     }
     sortAndRender(currentSort.col, currentSort.asc);
+  });
+
+  // ============= FILTER: Call dashboard summary and re-render =============
+  function buildSummaryApiUrl(selectedStores, selectedCategories) {
+    const base = (window.Laravel && window.Laravel.baseUrl)
+      ? String(window.Laravel.baseUrl).replace(/\/+$/, '')
+      : window.location.origin.replace(/\/+$/, '');
+    let url = `${base}/api/stores/dashboard/summary`;
+    const params = [];
+    if (selectedStores && selectedStores.length) params.push('stores=' + encodeURIComponent(selectedStores.join(',')));
+    if (selectedCategories && selectedCategories.length) params.push('categories=' + encodeURIComponent(selectedCategories.join(',')));
+    if (params.length) url += '?' + params.join('&');
+    return url;
+  }
+
+  function fetchSummaryAndRender() {
+    // determine selected stores (prefer data-store-id, then parse label 'Name - ID', then fallback to value)
+    function extractStoreId($input) {
+      // 1) data-store-id attribute
+      const dataId = $input.data('store-id');
+      if (dataId) return String(dataId).trim();
+
+      // 2) input value looks like an ID (simple heuristic: contains digits or uppercase letters, short)
+      const val = String($input.val() || '').trim();
+      if (/^[A-Za-z0-9_-]{1,20}$/.test(val) && /[0-9A-Za-z]/.test(val)) return val;
+
+      // 3) try to get associated label text and parse 'Name - ID'
+      const inputId = $input.attr('id');
+      let labelText = '';
+      if (inputId) {
+        const $lbl = $input.closest('.filter-group').find('label[for="' + inputId + '"]');
+        if ($lbl.length) labelText = $lbl.text().trim();
+      }
+      if (!labelText) {
+        const $lbl2 = $input.next('label');
+        if ($lbl2.length) labelText = $lbl2.text().trim();
+      }
+      if (labelText) {
+        const parts = labelText.split('-').map(p => p.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          const possibleId = parts[parts.length - 1];
+          if (/^[A-Za-z0-9_-]{1,30}$/.test(possibleId)) return possibleId;
+        }
+      }
+
+      // 4) last resort: return the raw value
+      return val;
+    }
+
+    let selectedStores = [];
+    const $storesGroup = $(".filter-group").filter(function () {
+      const label = $(this).find('.filter-label').text() || '';
+      return label.toLowerCase().indexOf('stores') !== -1;
+    }).first();
+    const $storeInputs = ($storesGroup.length ? $storesGroup : $(".filter-group").not('#category-filter-group').first()).find('input[type=checkbox]:checked');
+    selectedStores = $storeInputs.map(function(){ return extractStoreId($(this)); }).get().filter(Boolean);
+
+    // categories (category group has id 'category-filter-group')
+    const selectedCategories = $('#category-filter-group').find('input[type=checkbox]:checked').map(function(){ return $(this).val(); }).get();
+
+    const url = buildSummaryApiUrl(selectedStores, selectedCategories);
+    console.log('📡 Fetching dashboard summary:', url);
+
+    $tbody.html(`<tr><td colspan="10" class="text-center">Đang tải dữ liệu...</td></tr>`);
+
+    $.ajax({ url: url, method: 'GET', dataType: 'json', timeout: 10000 })
+      .done(function(resp){
+        if (!resp || resp.status !== 'success') {
+          console.warn('⚠️ Không nhận được dữ liệu hợp lệ từ summary API', resp);
+          $tbody.html(`<tr><td colspan="10" class="text-center">Không có dữ liệu</td></tr>`);
+          return;
+        }
+
+        // resp.stores: [{ store: {...}, categories: [{Category, revenue}, ...] }, ...]
+        const storesResp = resp.stores || [];
+
+        data = storesResp.map(item => {
+          const s = item.store || {};
+          const id = String(pick(s, ['StoreID','store_id','id','StoreId'], '') || '').trim();
+          const name = String(pick(s, ['Name','name','StoreName','store_name'], '') || '').trim() || id || 'Unknown Store';
+          const city = String(pick(s, ['City','city','Town','town'], '') || '').trim();
+          const country = String(pick(s, ['Country','country','country_code'], 'VN') || 'VN').trim();
+          const zip = String(pick(s, ['ZIPCode','zip','zip_code','postalCode'], '') || '').trim();
+          const lat = toNumber(pick(s, ['Latitude','latitude','Lat','lat'], 0), 0);
+          const lng = toNumber(pick(s, ['Longitude','longitude','Lng','lng'], 0), 0);
+
+          // sum revenue for selected categories (if provided) otherwise sum all returned categories
+          const cats = item.categories || [];
+          const catSelectedSum = cats.reduce((acc, c) => acc + toNumber(c.revenue || c.delta_gmv || c.revenue_amount || 0, 0), 0);
+          // allCat: try store-level field first, otherwise fallback to sum
+          const allCatVal = toNumber(pick(s, ['allCat','total_revenue','revenue','Revenue'], null), null);
+          const allCat = (allCatVal === null) ? catSelectedSum : allCatVal;
+
+          return {
+            id: id,
+            name: name,
+            city: city,
+            country: country,
+            zip: zip,
+            lat: lat,
+            lng: lng,
+            catSelected: catSelectedSum,
+            allCat: allCat
+          };
+        });
+
+        // re-sort and render
+        sortAndRender(currentSort.col, currentSort.asc);
+      })
+      .fail(function(jqXHR, textStatus, errorThrown){
+        console.error('❌ Summary API error', jqXHR.status, textStatus, errorThrown);
+        $tbody.html(`<tr><td colspan="10" class="text-center text-danger">Lỗi khi tải dữ liệu (${jqXHR.status})</td></tr>`);
+      });
+  }
+
+  // Bind apply button
+  $('.btn-apply-filters').off('click.topStores').on('click.topStores', function(e){
+    e.preventDefault();
+    fetchSummaryAndRender();
   });
   });
 }

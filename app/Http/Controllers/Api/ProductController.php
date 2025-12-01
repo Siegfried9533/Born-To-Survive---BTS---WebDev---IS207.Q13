@@ -104,6 +104,124 @@ class ProductController extends Controller
     }
 
     /**
+     * 5. GET /api/products/categories/summary
+     * Lấy dữ liệu tổng hợp theo category (product_count, delta_gmv) với filter stores & categories
+     * Query params: ?stores=S001,S002&categories=Cat1,Cat2
+     */
+    public function getCategorySummary(Request $request)
+    {
+        try {
+            $stores = $request->query('stores');
+            $categories = $request->query('categories');
+
+            $storeIds = [];
+            if ($stores) {
+                $storeIds = array_filter(array_map('trim', explode(',', $stores)));
+            }
+
+            $categoryList = [];
+            if ($categories) {
+                $categoryList = array_filter(array_map('trim', explode(',', $categories)));
+            }
+
+            $query = DB::table('products')
+                ->select(
+                    'products.Category',
+                    DB::raw('COUNT(DISTINCT products.ProdID) as product_count'),
+                    DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as delta_gmv'),
+                    DB::raw('COALESCE(SUM(CASE WHEN invoices.TransactionType IS NULL OR invoices.TransactionType = "In-Store" THEN (invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount ELSE 0 END), 0) as instore_gmv')
+                )
+                ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
+                ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
+                ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
+                ->whereNotNull('products.Category');
+
+            if (!empty($storeIds)) {
+                $query->whereIn('invoices.StoreID', $storeIds);
+            }
+
+            if (!empty($categoryList)) {
+                $query->whereIn('products.Category', $categoryList);
+            }
+
+            $categoriesData = $query->groupBy('products.Category')
+                ->orderByDesc('delta_gmv')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'filters' => [
+                    'stores' => $storeIds,
+                    'categories' => $categoryList
+                ],
+                'data' => $categoriesData
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getCategorySummary:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * 6. GET /api/products/products/summary
+     * Lấy dữ liệu product theo filter stores & categories
+     * Query params: ?stores=S001,S002&categories=Cat1,Cat2
+     */
+    public function getProductAnalyticsFiltered(Request $request)
+    {
+        try {
+            $stores = $request->query('stores');
+            $categories = $request->query('categories');
+
+            $storeIds = [];
+            if ($stores) {
+                $storeIds = array_filter(array_map('trim', explode(',', $stores)));
+            }
+
+            $categoryList = [];
+            if ($categories) {
+                $categoryList = array_filter(array_map('trim', explode(',', $categories)));
+            }
+
+            $query = DB::table('products')
+                ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
+                ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
+                ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID');
+
+            if (!empty($storeIds)) {
+                $query->whereIn('invoices.StoreID', $storeIds);
+            }
+
+            if (!empty($categoryList)) {
+                $query->whereIn('products.Category', $categoryList);
+            }
+
+            $products = $query->select(
+                    'products.ProdID',
+                    'products.Description as ProductName',
+                    'products.Category',
+                    DB::raw('COALESCE(SUM(invoice_lines.Quantity), 0) as total_sold'),
+                    DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as revenue')
+                )
+                ->groupBy('products.ProdID', 'products.Description', 'products.Category')
+                ->orderByDesc('revenue')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'filters' => [
+                    'stores' => $storeIds,
+                    'categories' => $categoryList
+                ],
+                'data' => $products
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getProductAnalyticsFiltered:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * 4. GET /api/products/{id}
      * Xem chi tiết 1 sản phẩm
      */

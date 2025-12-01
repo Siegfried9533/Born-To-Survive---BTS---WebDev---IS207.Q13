@@ -213,6 +213,137 @@ function initTopProducts() {
       '<tr><td colspan="5" class="text-center text-danger py-5">Không tải được dữ liệu sản phẩm từ API</td></tr>'
     );
   });
+
+  // ============= FILTER: fetch products summary with selected stores/categories =============
+  function extractStoreIdFromInput($input) {
+    const dataId = $input.data('store-id');
+    if (dataId) return String(dataId).trim();
+    const val = String($input.val() || '').trim();
+    if (/^[A-Za-z0-9_-]{1,20}$/.test(val) && /[0-9A-Za-z]/.test(val)) return val;
+    const inputId = $input.attr('id');
+    let labelText = '';
+    if (inputId) {
+      const $lbl = $input.closest('.filter-group').find('label[for="' + inputId + '"]');
+      if ($lbl.length) labelText = $lbl.text().trim();
+    }
+    if (!labelText) {
+      const $lbl2 = $input.next('label');
+      if ($lbl2.length) labelText = $lbl2.text().trim();
+    }
+    if (labelText) {
+      const parts = labelText.split('-').map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        const possibleId = parts[parts.length - 1];
+        if (/^[A-Za-z0-9_-]{1,30}$/.test(possibleId)) return possibleId;
+      }
+    }
+    return val;
+  }
+
+  function readSelectedFilters() {
+    // stores
+    let selectedStores = [];
+    const $storesGroup = $(".filter-group").filter(function () {
+      const label = $(this).find('.filter-label').text() || '';
+      return label.toLowerCase().indexOf('store') !== -1;
+    }).first();
+    const $storeInputs = ($storesGroup.length ? $storesGroup : $(".filter-group").not('#category-filter-group').first()).find('input[type=checkbox]:checked');
+    selectedStores = $storeInputs.map(function(){ return extractStoreIdFromInput($(this)); }).get().filter(Boolean);
+
+    // categories
+    const selectedCategories = $('#category-filter-group').find('input[type=checkbox]:checked').map(function(){ return $(this).val(); }).get().filter(Boolean);
+
+    return { stores: selectedStores, categories: selectedCategories };
+  }
+
+  function buildProductsSummaryUrl(stores, categories) {
+    const base = (window.Laravel && window.Laravel.baseUrl) ? String(window.Laravel.baseUrl).replace(/\/+$/, '') : window.location.origin.replace(/\/+$/, '');
+    let url = `${base}/api/products/product/summary`;
+    const params = [];
+    if (stores && stores.length) params.push('stores=' + encodeURIComponent(stores.join(',')));
+    if (categories && categories.length) params.push('categories=' + encodeURIComponent(categories.join(',')));
+    if (params.length) url += '?' + params.join('&');
+    return url;
+  }
+
+  function fetchProductsSummaryAndRender() {
+    const sel = readSelectedFilters();
+    const url = buildProductsSummaryUrl(sel.stores, sel.categories);
+    console.log('📡 Fetching products summary:', url);
+    const $tbody = $("#topProductsTable tbody");
+    $tbody.html('<tr><td colspan="5" class="text-center py-4">Đang tải dữ liệu...</td></tr>');
+
+    $.ajax({ url: url, method: 'GET', dataType: 'json', timeout: 10000 })
+      .done(function(resp){
+        if (!resp || resp.status !== 'success' || !resp.data) {
+          console.warn('⚠️ Invalid products summary response', resp);
+          $tbody.html('<tr><td colspan="5" class="text-center">Không có dữ liệu</td></tr>');
+          return;
+        }
+
+        const products = resp.data;
+        let data = [];
+        let totalDelta = 0, totalInstore = 0;
+        
+        products.forEach((p) => {
+          const id = p.ProdID || p.prodID || p.ProdId || "";
+          const name = p.ProductName || p.Description || "-";
+          const totalSold = Number(p.total_sold || 0);
+          const revenue = Number(p.revenue || 0);
+          totalDelta += totalSold;
+          totalInstore += revenue;
+          data.push({
+            rank: 0,
+            id: id,
+            name: name,
+            deltaGMV: `${totalSold} units`,
+            vnGrowth: "-",
+            instore: `${revenue.toLocaleString('fr-FR')} €`,
+            deltaNum: totalSold,
+            instoreNum: revenue,
+          });
+        });
+
+        data.sort((a,b)=> b.deltaNum - a.deltaNum);
+        data.forEach((r,i)=> r.rank = i+1);
+
+        // render
+        $tbody.empty();
+        $tbody.append(`\
+                <tr class="table-total align-middle">\
+                    <td></td>\
+                    <td class="text-primary fw-bold">Total</td>\
+                    <td class="text-primary fw-bold">All Products</td>\
+                    <td class="text-end pe-4"><div class="value-main">${totalDelta.toFixed(2)} pts</div></td>\
+                    <td class="text-end pe-4"><div class="value-main">${totalInstore.toLocaleString("fr-FR")} €</div></td>\
+                </tr>\
+            `);
+
+        data.forEach((r)=>{
+          const rankCell = r.rank===1?'<div class="rank-trophy gold"><i class="fas fa-medal"></i></div>':(r.rank===2?'<div class="rank-trophy silver"><i class="fas fa-medal"></i></div>':(r.rank===3?'<div class="rank-trophy bronze"><i class="fas fa-medal"></i></div>':`<div class="rank-normal">${r.rank}</div>`));
+          const deltaClass = r.deltaNum > 0 ? 'text-success' : 'text-danger';
+          $tbody.append(`\
+                    <tr class="align-middle">\
+                        <td class="text-center">${rankCell}</td>\
+                        <td class="text-muted fw-medium">${r.id}</td>\
+                        <td class="item-name">${r.name}</td>\
+                        <td class="text-end pe-4"><div class="value-main ${deltaClass}">${r.deltaGMV}</div></td>\
+                        <td class="text-end pe-4"><div class="value-main text-primary">${r.instore}</div></td>\
+                    </tr>\
+                `);
+        });
+      })
+      .fail(function(jqXHR, textStatus, errorThrown){
+        console.error('❌ Error fetching products summary:', textStatus, errorThrown);
+        $("#topProductsTable tbody").html('<tr><td colspan="5" class="text-center text-danger py-5">Không tải được dữ liệu sản phẩm từ API</td></tr>');
+      });
+  }
+
+  // Bind Apply Filters button to fetch products summary
+  $('.btn-apply-filters').off('click.topProducts').on('click.topProducts', function(e){
+    e.preventDefault();
+    fetchProductsSummaryAndRender();
+  });
 }
 
 // GỌI KHI LOAD TRANG

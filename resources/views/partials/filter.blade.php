@@ -6,26 +6,19 @@
         <span class="filter-display-text">&nbsp;</span>
     </div>
     <div class="filter-dropdown">
-        <div class="filter-item">
-            <input type="checkbox" id="store1" value="Store 1">
-            <label for="store1">Store 1</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="store2" value="Store 2">
-            <label for="store2">Store 2</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="store3" value="Store 3">
-            <label for="store3">Store 3</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="store4" value="Store 4">
-            <label for="store4">Store 4</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="store5" value="Store 5">
-            <label for="store5">Store 5</label>
-        </div>
+        @php $stores = isset($stores) ? $stores : []; @endphp
+        @forelse($stores as $s)
+            @php
+                $sid = isset($s->StoreID) ? $s->StoreID : (isset($s['StoreID']) ? $s['StoreID'] : '');
+                $sname = isset($s->Name) ? $s->Name : (isset($s['Name']) ? $s['Name'] : ($sid ?: 'Unknown'));
+                $inputId = 'store_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $sid ?: $loop->index);
+            @endphp
+            <div class="filter-item">
+                <input type="checkbox" id="{{ $inputId }}" value="{{ $sid }}" data-store-id="{{ $sid }}">
+                <label for="{{ $inputId }}">{{ $sname }}</label>
+            </div>
+        @empty
+        @endforelse
     </div>
 </div>
 
