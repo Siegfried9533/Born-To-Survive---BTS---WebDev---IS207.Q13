@@ -2,19 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
 {
-    use HasFactory;
-
-    protected $table = 'employees';
-
-    // Cấu hình khóa chính (Quan trọng)
+    // This table does not use Laravel's created_at/updated_at timestamps
+    public $timestamps = false;
+    protected $table = 'EMPLOYEES';
     protected $primaryKey = 'EmpID';
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['EmpID', 'Name', 'Position', 'StoreID'];
+    protected $fillable = [
+        'EmpID',
+        'Name',
+        'Position',
+        'StoreID',
+    ];
+
+    public function account()
+    {
+        return $this->hasOne(User::class, 'EmpID', 'EmpID');
+    }
 }
