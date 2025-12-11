@@ -1,47 +1,18 @@
+import $ from 'jquery';
+
 // =======================================================
 // TOP-STORES (Dữ liệu từ API Laravel)
 // =======================================================
 console.log("🔧 top-stores.js file đã được load");
-console.log("$ jQuery available?", typeof $ !== 'undefined' ? "✅ Có" : "❌ Không");
 
-// Wait for jQuery (poll) before initializing to avoid race conditions
-(function waitForjQueryAndInit() {
-  const maxAttempts = 25; // try for ~5 seconds (25 * 200ms)
-  let attempts = 0;
-
-  function tryInit() {
-    if (typeof $ !== "undefined") {
-      try {
-        initTopStores();
-      } catch (err) {
-        console.error('Error initializing initTopStores():', err);
-      }
-
-      if (typeof initFilterComponent === 'function') {
-        try {
-          initFilterComponent();
-        } catch (err) {
-          console.error('Error initializing initFilterComponent():', err);
-        }
-      }
-      return;
-    }
-
-    attempts++;
-    if (attempts <= maxAttempts) {
-      // wait 200ms and retry
-      setTimeout(tryInit, 200);
-    } else {
-      console.error('jQuery not found after ' + attempts + ' attempts. Skipping initialization.');
-    }
-  }
-
-  tryInit();
-})();
+$(document).ready(function() {
+  initTopStores();
+});
 
 function initTopStores() {
+  if ($("#topStoresTable").length === 0) return;
+  
   console.log("🚀 Bắt đầu khởi tạo Top Stores");
-  $(document).ready(function () {
   console.log("📄 DOM ready - tiến hành khởi tạo bảng stores");
   
   const $tbody = $("#storesTable tbody");
@@ -218,6 +189,5 @@ function initTopStores() {
       currentSort = { col: col, asc: false };
     }
     sortAndRender(currentSort.col, currentSort.asc);
-  });
   });
 }

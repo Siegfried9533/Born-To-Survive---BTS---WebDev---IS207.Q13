@@ -176,6 +176,7 @@ function initSidebar() {
 // =======================================================
 async function initCustomerEnglish() {
     const $tableBody = $("#topCustomerTable tbody");
+    
     // Nếu không tìm thấy bảng thì thoát (không phải trang customer)
     if ($tableBody.length === 0) return; 
 
@@ -183,41 +184,16 @@ async function initCustomerEnglish() {
     $("#last-update").text(today.format("MMM DD, YYYY HH:mm"));
 
     // --- Cấu hình search (dùng header) ---
-    // 1. Lấy phần tử Search trên Header
     const $globalInput = $("#globalSearchInput");
-    
-    // 2. Thay đổi Placeholder để người dùng biết họ đang tìm gì
     $globalInput.attr("placeholder", "Search customer name, phone, email...");
-    $globalInput.val(""); // Reset giá trị cũ nếu có
+    $globalInput.val(""); 
 
-    try {
-        // 3. Hàm gọi API
-      const loadData = async (keyword = '') => {
-          $tableBody.html('<tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading...</td></tr>');
-          
-          try {
-              let response;
-              if (keyword) {
-                  // Gọi API Search
-                  response = await API.searchCustomers(keyword);
-              } else {
-                  // Gọi API List (Trang 1)
-                  response = await API.fetchCustomers(1);
-              }
+    // --- 1. HÀM RENDER DỮ LIỆU RA BẢNG (Tách ra từ đoạn code lỗi) ---
+    const renderCustomerTable = (customers) => {
+        $tableBody.empty(); // Xóa dữ liệu cũ trước khi render
 
-              const dataRaw = response.data.data; 
-              const customers = Array.isArray(dataRaw) ? dataRaw : dataRaw.data;
-
-              renderCustomerTable(customers);
-
-          } catch (error) {
-              console.error(error);
-              $tableBody.html(`<tr><td colspan="5" class="text-center text-danger">Error loading data</td></tr>`);
-          }
-      };
-
-        if (customers.length === 0) {
-            $tableBody.html('<tr><td colspan="5" class="text-center">Chưa có dữ liệu khách hàng</td></tr>');
+        if (!customers || customers.length === 0) {
+            $tableBody.html('<tr><td colspan="5" class="text-center py-4 text-muted">Chưa có dữ liệu khách hàng</td></tr>');
             return;
         }
 
@@ -233,7 +209,7 @@ async function initCustomerEnglish() {
             if(c.rank === 'VIP') badgeClass = 'bg-warning text-dark';
             if(c.rank === 'Gold') badgeClass = 'bg-info text-white';
 
-            // 1. Chuyển đổi số thành dạng tiền tệ Việt Nam (VD: 124.518.000 ₫)
+            // Chuyển đổi số thành dạng tiền tệ Việt Nam
             const formattedMoney = new Intl.NumberFormat('vi-VN', { 
                 style: 'currency', 
                 currency: 'VND' 
@@ -250,47 +226,79 @@ async function initCustomerEnglish() {
             `);
         });
 
-        console.log("Customers loaded from API");
+        console.log("Customers rendered:", customers.length);
+    };
+
+    // --- 2. HÀM GỌI API (LOAD DATA) ---
+    const loadData = async (keyword = '') => {
+        // Hiển thị loading
+        $tableBody.html('<tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading...</td></tr>');
+        
+        try {
+            let response;
+            if (keyword) {
+                // Gọi API Search
+                response = await API.searchCustomers(keyword);
+            } else {
+                // Gọi API List (Trang 1)
+                response = await API.fetchCustomers(1);
+            }
+
+            // Lấy dữ liệu an toàn
+            const dataRaw = response.data.data; 
+            const customers = Array.isArray(dataRaw) ? dataRaw : (dataRaw.data || []);
+
+            // Gọi hàm render đã định nghĩa ở trên
+            renderCustomerTable(customers);
+
+        } catch (error) {
+            console.error("API Error:", error);
+            $tableBody.html(`<tr><td colspan="5" class="text-center text-danger">Lỗi kết nối API: ${error.message}</td></tr>`);
+        }
+    };
+
+    // --- 3. KHỞI CHẠY ---
+    try {
+        // Load dữ liệu ban đầu
+        await loadData();
+
+        // Setup search event listener
+        $globalInput.off("keyup").on("keyup", function() {
+            const keyword = $(this).val().trim();
+            loadData(keyword);
+        });
 
     } catch (error) {
         console.error("Lỗi tải khách hàng:", error);
-        $tableBody.html(`<tr><td colspan="5" class="text-center text-danger">Lỗi kết nối API: ${error.message}</td></tr>`);
+        $tableBody.html(`<tr><td colspan="5" class="text-center text-danger">Lỗi: ${error.message}</td></tr>`);
     }
 
-    // === LOGIC DOWNLOAD CSV ===
+    // === LOGIC DOWNLOAD CSV (Giữ nguyên như cũ) ===
     const $btnDownload = $("#downloadBtn");
     
     $btnDownload.off("click").on("click", async function (e) {
         e.preventDefault();
         
-        // 1. Hiệu ứng loading nút bấm
         const originalText = $btnDownload.html();
         $btnDownload.html('<i class="fas fa-spinner fa-spin"></i> Processing...').prop('disabled', true);
 
         try {
-            // 2. Gọi API lấy TOÀN BỘ dữ liệu
             const response = await API.fetchAllCustomersForExport();
-            const data = response.data.data; // Mảng danh sách khách hàng
+            const data = response.data.data;
 
             if (!data || data.length === 0) {
                 alert("Không có dữ liệu để xuất!");
                 return;
             }
 
-            // 3. Tạo nội dung CSV
-            // Header (Tiếng Việt cần có \uFEFF để Excel không lỗi font)
             let csvContent = "\uFEFFRank,Customer ID,Customer Name,Phone,Email,Total Spent,Rank Group\n";
 
             data.forEach((row, index) => {
-                // Xử lý dữ liệu tránh lỗi nếu có dấu phẩy trong tên
                 const name = `"${row.Name}"`; 
                 const spent = `"${row.formatted_spent}"`;
-                
-                // Nối chuỗi
                 csvContent += `${index + 1},${row.CusID},${name},${row.Phone},${row.Email},${spent},${row.rank}\n`;
             });
 
-            // 4. Tạo file ảo và tải xuống
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -308,7 +316,6 @@ async function initCustomerEnglish() {
             console.error("Export Error:", error);
             alert("Có lỗi khi xuất dữ liệu. Vui lòng thử lại.");
         } finally {
-            // 5. Trả lại trạng thái nút bấm
             $btnDownload.html(originalText).prop('disabled', false);
         }
     });
@@ -434,11 +441,11 @@ function initChatboxSystem() {
     });
 
     function appendMessage(html, sender) {
-        const style = sender === 'user' 
+        const styleStr = sender === 'user' 
             ? 'background: #e0e7ff; color: #3730a3; align-self: flex-end; text-align: right;' 
             : 'background: #f3f4f6; color: #1f2937; align-self: flex-start;';
         
-        const msgDiv = `<div style="padding: 8px 12px; border-radius: 12px; max-width: 80%; margin-bottom: 8px; ${style}">${html}</div>`;
+        const msgDiv = '<div style="padding: 8px 12px; border-radius: 12px; max-width: 80%; margin-bottom: 8px; ' + styleStr + '">' + html + '</div>';
         $messages.append(msgDiv);
         scrollToBottom();
     }

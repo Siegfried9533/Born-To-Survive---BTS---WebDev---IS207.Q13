@@ -33,6 +33,11 @@ export const fetchSalesAnalytics = (from, to) => {
     return apiClient.get(`/analytics/sales`, { params: { from, to } });
 };
 
+// --- NHÓM DASHBOARD ---
+export const fetchDashboardOverview = () => {
+    return apiClient.get(`/dashboard/overview`);
+};
+
 //NHÓM XUẤT BÁO CÁO
 // Hàm lấy toàn bộ khách hàng để export
 export const fetchAllCustomersForExport = () => {

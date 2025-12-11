@@ -60,10 +60,10 @@ class DashboardController extends Controller
         // Alert B: Giao dịch giá trị lớn bất thường (Ví dụ > 10,000,000) trong ngày
         // Cần subquery để tính tổng giá trị từng đơn hàng
         $highValueTrans = DB::table('invoice_lines')
-            ->join('invoices', 'invoice_lines.invoiceid', '=', 'invoices.invoiceid')
+            ->join('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
             ->whereDate('invoices.Date', Carbon::today())
-            ->select('invoices.invoiceid', DB::raw('SUM((Quantity * UnitPrice) - Discount) as total_val'))
-            ->groupBy('invoices.invoiceid')
+            ->select('invoices.InvoiceID', DB::raw('SUM((Quantity * UnitPrice) - Discount) as total_val'))
+            ->groupBy('invoices.InvoiceID')
             ->having('total_val', '>', 10000000) // Ngưỡng ví dụ: 10 triệu
             ->count();
 

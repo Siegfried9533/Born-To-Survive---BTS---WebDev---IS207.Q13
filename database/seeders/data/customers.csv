@@ -1,0 +1,51 @@
+CusID,Name,Phone,Email,City,Country,Gender,DateOfBirth,JobTitle,created_at,updated_at
+C001,Customer 1,0959174586,cust1@email.com,Hà Nội,Vietnam,F,1992-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C002,Customer 2,0931104612,cust2@email.com,Hải Phòng,Vietnam,F,1992-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C003,Customer 3,0925320410,cust3@email.com,Đà Nẵng,Vietnam,Other,1992-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C004,Customer 4,0968326890,cust4@email.com,Hải Phòng,Vietnam,Other,1994-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C005,Customer 5,0922191336,cust5@email.com,Hải Phòng,Vietnam,Other,1997-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C006,Customer 6,0936914478,cust6@email.com,HCM,Vietnam,M,1995-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C007,Customer 7,0960624455,cust7@email.com,Hải Phòng,Vietnam,F,1996-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C008,Customer 8,0918375553,cust8@email.com,Hà Nội,Vietnam,M,1996-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C009,Customer 9,0973037009,cust9@email.com,Cần Thơ,Vietnam,M,1994-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C010,Customer 10,0927236390,cust10@email.com,Đà Nẵng,Vietnam,Other,1990-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C011,Customer 11,0944220682,cust11@email.com,Hà Nội,Vietnam,M,1996-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C012,Customer 12,0952281591,cust12@email.com,Hải Phòng,Vietnam,F,1993-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C013,Customer 13,0912890755,cust13@email.com,Cần Thơ,Vietnam,F,1997-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C014,Customer 14,0930130150,cust14@email.com,Cần Thơ,Vietnam,Other,1996-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C015,Customer 15,0992653729,cust15@email.com,Cần Thơ,Vietnam,Other,1997-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C016,Customer 16,0938941820,cust16@email.com,Cần Thơ,Vietnam,Other,1999-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C017,Customer 17,0936169822,cust17@email.com,Hà Nội,Vietnam,M,1992-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C018,Customer 18,0983301937,cust18@email.com,Hà Nội,Vietnam,Other,1995-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C019,Customer 19,0986025891,cust19@email.com,Đà Nẵng,Vietnam,Other,1993-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C020,Customer 20,0933138997,cust20@email.com,Đà Nẵng,Vietnam,M,1991-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C021,Customer 21,0927685436,cust21@email.com,HCM,Vietnam,Other,1995-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C022,Customer 22,0974175064,cust22@email.com,Cần Thơ,Vietnam,Other,1999-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C023,Customer 23,0989503022,cust23@email.com,Cần Thơ,Vietnam,F,1992-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C024,Customer 24,0938238409,cust24@email.com,Cần Thơ,Vietnam,M,1991-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C025,Customer 25,0912755057,cust25@email.com,Hà Nội,Vietnam,Other,1994-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C026,Customer 26,0995955157,cust26@email.com,Hà Nội,Vietnam,M,1999-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C027,Customer 27,0923270646,cust27@email.com,Cần Thơ,Vietnam,Other,1995-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C028,Customer 28,0948631720,cust28@email.com,HCM,Vietnam,Other,1991-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C029,Customer 29,0936161039,cust29@email.com,Hải Phòng,Vietnam,M,1991-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C030,Customer 30,0931046457,cust30@email.com,Đà Nẵng,Vietnam,Other,1993-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C031,Customer 31,0933289434,cust31@email.com,HCM,Vietnam,Other,1996-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C032,Customer 32,0953312794,cust32@email.com,Hải Phòng,Vietnam,M,1998-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C033,Customer 33,0940217410,cust33@email.com,Cần Thơ,Vietnam,Other,1994-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C034,Customer 34,0963847910,cust34@email.com,Hà Nội,Vietnam,Other,1994-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C035,Customer 35,0971712984,cust35@email.com,HCM,Vietnam,Other,1990-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C036,Customer 36,0915320266,cust36@email.com,Hải Phòng,Vietnam,Other,1991-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C037,Customer 37,0929929263,cust37@email.com,HCM,Vietnam,Other,1995-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C038,Customer 38,0914056170,cust38@email.com,Đà Nẵng,Vietnam,M,1995-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C039,Customer 39,0961700300,cust39@email.com,Cần Thơ,Vietnam,F,1993-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C040,Customer 40,0977953899,cust40@email.com,Cần Thơ,Vietnam,M,1991-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C041,Customer 41,0958800268,cust41@email.com,Hà Nội,Vietnam,F,1994-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C042,Customer 42,0919295582,cust42@email.com,Hải Phòng,Vietnam,Other,1995-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C043,Customer 43,0918695490,cust43@email.com,Hà Nội,Vietnam,F,1991-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C044,Customer 44,0996759598,cust44@email.com,Đà Nẵng,Vietnam,F,1991-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C045,Customer 45,0927350550,cust45@email.com,Đà Nẵng,Vietnam,M,1997-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C046,Customer 46,0980329892,cust46@email.com,HCM,Vietnam,Other,1992-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C047,Customer 47,0993734649,cust47@email.com,HCM,Vietnam,F,1996-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C048,Customer 48,0945899260,cust48@email.com,Hải Phòng,Vietnam,F,1995-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C049,Customer 49,0995510678,cust49@email.com,Cần Thơ,Vietnam,Other,1994-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00
+C050,Customer 50,0952719594,cust50@email.com,Hà Nội,Vietnam,F,1994-01-01,Freelancer,2024-01-01 00:00:00,2024-01-01 00:00:00

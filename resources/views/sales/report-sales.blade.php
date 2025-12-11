@@ -1,26 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('layouts.app')
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Report Sales</title>
+@section('title', 'Sales Report')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css" />
-    <link rel="shortcut icon" href="/assets/images/Favicon.png" type="image/x-icon">
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-</head>
-
-<body>
-    <aside id="sidebar" class="sidebar"></aside>
-
-    <main class="main-content">
-        <header id="app-header"></header>
-
-        <div id="filter-container"></div>
-        <section class="container-fluid-dashboard px-4 pb-5">
+@section('content')
+<div id="filter-container"></div>
+<section class="container-fluid-dashboard px-4 pb-5">
             <div class="card section-card shadow-sm">
 
                 <div class="container-fluid px-4 py-4">
@@ -227,17 +211,4 @@
                 </div>
             </div>
         </section>
-
-        <footer id="app-footer"></footer>
-    </main>
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/customParseFormat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    <script src="../js/main.js"></script>
-</body>
-
-</html>
+@endsection

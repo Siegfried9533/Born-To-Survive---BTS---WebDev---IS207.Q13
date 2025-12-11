@@ -337,7 +337,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: url("/assets/images/Wave.png") no-repeat;
+  background: url("../assets/images/Wave.png") no-repeat;
   background-size: 1800px auto;
   background-position: center 72%;
   opacity: 1;
@@ -349,7 +349,7 @@ body {
   content: "";
   position: absolute;
   inset: -100px;
-  background: url("/assets/images/Wave.png") no-repeat;
+  background: url("../assets/images/Wave.png") no-repeat;
   background-size: 1800px auto;
   background-position: 70% 80%;
   opacity: 1;

@@ -1,17 +1,19 @@
+import $ from 'jquery';
+
 /* ========================================================= */
 /* TOP PRODUCTS  */
 /* ========================================================= */
-console.log("🔧 top-stores.js file đã được load");
+console.log("🔧 top-products.js file đã được load");
 function initTopProducts() {
   if ($("#topProductsTable").length === 0) return;
 
   // Lấy dữ liệu từ API getProductAnalytics
   const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
   const apiUrl = `${baseUrl}/api/analytics/products`;
-  console.log("🔗 Lấy dữ liệu Top Products từ API:", apiUrl);
+  console.log("Lấy dữ liệu Top Products từ API:", apiUrl);
   $.get(apiUrl, function (response) {
     // API trả về: { status: 'success', filters: {...}, data: [...] }
-    console.log("✅ API products response:", response);
+    console.log("API products response:", response);
     const products = response && response.data ? response.data : [];
     const $tbody = $("#topProductsTable tbody");
     $tbody.empty();
@@ -34,7 +36,7 @@ function initTopProducts() {
     products.forEach((p) => {
       // Controller trả: ProdID, ProductName, Category, total_sold, revenue
       const id = p.ProdID || p.prodID || p.ProdId || "";
-      const name = p.ProductName || p.Description || p.Description || "-";
+      const name = p.ProductName || p.SubCategory || p.Description || "-";
       const totalSold = Number(p.total_sold || 0);
       const revenue = Number(p.revenue || 0);
 
@@ -208,7 +210,7 @@ function initTopProducts() {
         URL.revokeObjectURL(url);
       });
   }).fail(function (jqXHR, textStatus, errorThrown) {
-    console.error('❌ Lỗi khi gọi API products:', textStatus, errorThrown, jqXHR && jqXHR.responseText);
+    console.error('Lỗi khi gọi API products:', textStatus, errorThrown, jqXHR && jqXHR.responseText);
     $("#topProductsTable tbody").html(
       '<tr><td colspan="5" class="text-center text-danger py-5">Không tải được dữ liệu sản phẩm từ API</td></tr>'
     );

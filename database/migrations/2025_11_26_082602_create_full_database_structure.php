@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('City', 50)->nullable();
             $table->string('Country', 50)->nullable();
             $table->string('ZIPCode', 10)->nullable();
-            $table->string('Latitude', 10)->nullable();
-            $table->string('Longitude', 10)->nullable();
+            $table->string('Latitude', 20)->nullable();
+            $table->string('Longitude', 50)->nullable();
             $table->timestamps();
         });
 
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->string('Phone', 255)->nullable();
             $table->string('Email', 255)->nullable();
             $table->string('City', 50)->nullable();
-            $table->string('Country', 50)->nullable();
+            $table->string('Country', 100)->nullable();
             $table->string('Gender', 6)->nullable();
             $table->dateTime('DateOfBirth')->nullable();
             $table->string('JobTitle', 255)->nullable();
@@ -98,10 +98,10 @@ return new class extends Migration
             $table->string('CusID', 10);
             $table->foreign('CusID')->references('CusID')->on('customers');
 
-            $table->string('EmpID', 10);
+            $table->string('EmpID', 10)->nullable();
             $table->foreign('EmpID')->references('EmpID')->on('employees');
 
-            $table->string('StoreID', 10);
+            $table->string('StoreID', 10)->nullable();
             $table->foreign('StoreID')->references('StoreID')->on('stores');
             
             $table->timestamps();

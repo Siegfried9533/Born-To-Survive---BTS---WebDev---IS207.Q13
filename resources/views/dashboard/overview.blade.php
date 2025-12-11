@@ -16,7 +16,7 @@
                 <div class="card section-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
                         <h5 class="card-title mb-3">Modalab Synthesis</h5>
-                        <div class="chart-wrapper">
+                        <div class="chart-wrapper" style="height: 300px; position: relative;">
                             <canvas id="modalabChart"></canvas>
                         </div>
                     </div>
@@ -28,7 +28,7 @@
                 <div class="card section-card h-100">
                     <div class="card-body p-4 d-flex flex-column">
                         <h5 class="card-title mb-3">Percentage of Products Sold</h5>
-                        <div class="chart-wrapper">
+                        <div class="chart-wrapper" style="height: 300px; position: relative;">
                             <canvas id="salesChannelsChart"></canvas>
                         </div>
                     </div>
@@ -43,7 +43,7 @@
                             <h5 class="card-title mb-0">Evolution of GMV over 12 months</h5>
                             <span class="text-warning fw-bold">Growth</span>
                         </div>
-                        <div class="chart-wrapper-evolution">
+                        <div class="chart-wrapper-evolution" style="height: 350px; position: relative;">
                             <canvas id="gmvEvolutionChart"></canvas>
                         </div>
                     </div>

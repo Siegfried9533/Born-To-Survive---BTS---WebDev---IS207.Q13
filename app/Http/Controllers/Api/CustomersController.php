@@ -104,7 +104,8 @@ class CustomersController extends Controller
         }
 
         // Tìm kiếm đa năng (Tên OR SĐT OR Email OR ID)
-        $customers = Customer::query()
+                // Dùng đúng model Customers (đã được import ở đầu file)
+                $customers = Customers::query()
             ->select('CusID', 'Name', 'Phone', 'Email') // Chỉ lấy cột cần thiết
             ->where(function($q) use ($keyword) {
                 $q->where('Name', 'LIKE', "%{$keyword}%")
