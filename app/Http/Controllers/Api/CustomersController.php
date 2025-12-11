@@ -11,11 +11,15 @@ use App\Models\InvoiceLines;
 
 class CustomersController extends Controller
 {
-    public function index(){
-        //1. Query dữ liệu và tính toán
-        $customers = Customers::query() 
-            -> select("customers.CusID", "customers.Name", "customers.Phone", "customers.Email")
-            
+    /**
+     * API 1: Danh sách khách hàng & KPI (Có phân trang)
+     */
+    public function index(Request $request)
+    {
+        // 1. Query dữ liệu và tính toán
+        $query = Customers::query() 
+            ->select("customers.CusID", "customers.Name", "customers.Phone", "customers.Email")
+
             //Dùng withSum có điều kiện
             //SELECT customers.*, 
                 //SUM(invoice_lines.Quantity * invoice_lines.UnitPrice - invoice_lines.Discount) AS total_spent
@@ -25,65 +29,94 @@ class CustomersController extends Controller
             //GROUP BY customers.CusID
             //ORDER BY total_spent DESC;
             
-            -> withSum(["invoices as total_spent" => function($query){
-                $query->join("invoice_lines", "invoices.InvoiceID", "=", "invoice_lines.InvoiceID")
-                    -> select(DB::raw("SUM(invoice_lines.Quantity * invoice_lines.UnitPrice  - invoice_lines.Discount)"));
+            ->withSum(["invoices as total_spent" => function($q){
+                // LƯU Ý: Tên bảng trong DB của bạn là 'invoice_lines'
+                $q->join("invoice_lines", "invoices.InvoiceID", "=", "invoice_lines.InvoiceID")
+                  // Công thức: (Số lượng * Đơn giá) - Giảm giá
+                  ->select(DB::raw("SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount)"));
             }], 'total_spent')
 
-            //Sắp xếp ai nhiều tiền nhất đưa lên đầu
-           -> orderByDesc('total_spent')
-           //Phân trang lấy 10 người mỗi lần tải
-           -> paginate(10);
+            ->orderByDesc('total_spent');
+
+        // 2. Xử lý Phân trang hoặc Lấy hết (cho chức năng Export)
+        if ($request->input('limit') === 'all') {
+            $customers = $query->get();
+        } else {
+            $customers = $query->paginate(10);
+        }
         
-           //2. Biến đổi dữ liệu
-           //Gắn nhãn khách hàng (VIP, Gold, Member) dựa trên tổng chi tiêu
-              $customers->getCollection()->transform(function($customers){
-                $money = $customers->total_spent ?? 0;
+        // 3. Biến đổi dữ liệu (Transformation)
+        // Dùng biến $dataSet để xử lý chung cho cả 2 trường hợp (Phân trang và Không phân trang)
+        $dataSet = ($request->input('limit') === 'all') ? $customers : $customers->getCollection();
 
-                if($money >= 1000000){
-                    $customers->label = "VIP";
-                } else if ($money >= 500000){
-                    $customers->label = "Gold";
-                } else {
-                    $customers->label = "Member";
-                }
+        $formattedData = $dataSet->map(function($customer){ // Sửa biến $customers -> $customer (số ít)
+            
+            $money = $customer->total_spent ?? 0;
 
-                return [
-                    'CusID' => $customers->CusID,
-                    'Name' => $customers->Name,
-                    'Phone' => $customers->Phone,
-                    'Email' => $customers->Email,
-                    'total_spent' => number_format($money) . ' VND',
-                    'rank' => $customers->label
-                ];
-              });
+            // Logic xếp hạng
+            if($money >= 10000000){
+                $rank = "VIP";
+            } else if ($money >= 5000000){
+                $rank = "Gold";
+            } else {
+                $rank = "Member";
+            }
 
-              //3. Trả JSON
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Lấy danh sách khách hàng thành công',
-                    'data' => $customers
-                ]);
+            return [
+                'CusID' => $customer->CusID,
+                'Name' => $customer->Name,
+                'Phone' => $customer->Phone,
+                'Email' => $customer->Email,
+                'total_spent' => $money, // Giữ số nguyên để JS tính toán nếu cần
+                'formatted_spent' => number_format($money) . ' VND',
+                'rank' => $rank
+            ];
+        });
+
+        // Gán lại dữ liệu đã format
+        if ($request->input('limit') === 'all') {
+            $finalData = $formattedData;
+        } else {
+            $customers->setCollection($formattedData);
+            $finalData = $customers;
+        }
+
+        // 4. Trả JSON
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Lấy danh sách khách hàng thành công',
+            'data' => $finalData
+        ]);
     }
 
-    public function search(Request $request){
-
+    /**
+     * API 2: Tìm kiếm thông minh (Smart Search)
+     */
+    public function search(Request $request)
+    {
         $keyword = $request->input('keyword');
 
         if (!$keyword) {
              return response()->json([
                 'status' => 'error', 
-                'message' => 'Vui lòng nhập từ khóa'
+                'message' => 'Vui lòng nhập từ khóa (keyword)'
             ]);
         }
 
-        $customers = Customers::query()
-            ->where('Name', 'LIKE', "%{$keyword}%")
-            ->orWhere('Phone', 'LIKE', "%{$keyword}%")
-            ->orWhere('Email', 'LIKE', "%{$keyword}%")
-            ->limit(20)
+        // Tìm kiếm đa năng (Tên OR SĐT OR Email OR ID)
+        $customers = Customer::query()
+            ->select('CusID', 'Name', 'Phone', 'Email') // Chỉ lấy cột cần thiết
+            ->where(function($q) use ($keyword) {
+                $q->where('Name', 'LIKE', "%{$keyword}%")
+                  ->orWhere('Phone', 'LIKE', "%{$keyword}%")
+                  ->orWhere('Email', 'LIKE', "%{$keyword}%")
+                  ->orWhere('CusID', 'LIKE', "%{$keyword}%");
+            })
+            ->limit(20) // Giới hạn 20 kết quả
             ->get();
 
+        // Format lại dữ liệu tìm kiếm (nếu cần hiển thị Rank luôn ở đây thì phải tính toán như trên)
+        // Tạm thời trả về raw data
         return response()->json([
             'status' => 'success',
             'total_found' => $customers->count(),
