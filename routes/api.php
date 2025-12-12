@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CustomersController;
 use App\Http\Controllers\Api\SalesController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Api\ChatBoxController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
+use App\Http\Controllers\Api\ExportController;
 
 // API Routes - analytics, customers, sales, chatbox
 Route::prefix('analytics')->group(function () {
@@ -43,3 +45,10 @@ Route::get('/stores/{id}/metrics', [AnalyticsController::class, 'getStoreMetrics
 
 Route::get('/stores/{id}/employees', [StoreController::class, 'getEmployees']);
 Route::put('/stores/{id}', [StoreController::class, 'update']);
+
+
+Route::get('/dashboard/overview', [DashboardController::class, 'index']);
+
+// API chung để export CSV: /api/export/{type}
+// Hỗ trợ trước: customers, stores, products, invoices
+Route::get('/export/{type}', [ExportController::class, 'export']);

@@ -7,8 +7,7 @@
     <title>Sign Up</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="shortcut icon" href="{{ asset('images/Favicon.png') }}" type="image/x-icon">
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/sign-in.css') }}">
+    @vite(['resources/css/style.css', 'resources/css/sign-in.css'])
 </head>
 
 <body>
@@ -126,8 +125,7 @@
     </footer>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="{{ asset('js/main.js') }}"></script>
-    <script src="{{ asset('js/sign-up.js') }}"></script>
+    @vite(['resources/js/main.js', 'resources/js/sign-up.js'])
 </body>
 
 </html>

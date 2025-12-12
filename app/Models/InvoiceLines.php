@@ -25,7 +25,7 @@ class InvoiceLines extends Model
 
     public function invoice()
     {
-        return $this->belongsTo(Invoice::class, 'InvoiceID', 'InvoiceID');
+        return $this->belongsTo(Invoices::class, 'InvoiceID', 'InvoiceID');
     }
 
 }

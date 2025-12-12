@@ -56,7 +56,7 @@ class ChatBoxController extends Controller
                 'id' => $log->id,
                 'question' => $log->question,
                 'bot_response' => [
-                    'answer' => $log->answer,
+                    'answer' => $log->bot_response,
                     'recommendation' => $log->recommendation
                 ],
                 'time' => $log->created_at->format('H:i d/m/Y') // VD: 14:30 29/11/2025

@@ -1,3 +1,5 @@
+import $ from 'jquery';
+
 /* ======================================================= */
 /* TOP CATEGORY    */
 /* ======================================================= */
@@ -8,9 +10,9 @@ function initTopCategory() {
   // Lấy dữ liệu từ API categories
   const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
   const apiUrl = `${baseUrl}/api/products/categories`;
-  console.log("🔗 Lấy dữ liệu Top Category từ API:", apiUrl);
+  console.log("Lấy dữ liệu Top Category từ API:", apiUrl);
   $.get(apiUrl, function (response) {
-    console.log("✅ API categories response:", response);
+    console.log("API categories response:", response);
     const items = response && response.data ? response.data : (Array.isArray(response) ? response : []);
     const $tbody = $("#topCategoryTable tbody");
     $tbody.empty();
@@ -23,7 +25,7 @@ function initTopCategory() {
       // Support both object items (new API with delta_gmv/instore_gmv) and plain string array (backward compat)
       let id, name, deltaNum, instoreNum, deltaDisplay, vnGrowth, instoreDisplay;
 
-      console.log(`📊 Category ${idx}:`, it); // Debug: in từng object
+      console.log(`Category ${idx}:`, it); // Debug: in từng object
 
       if (typeof it === 'string' || typeof it === 'number') {
         // Simple string item -> use as name and id, no metrics available
@@ -179,4 +181,6 @@ function initTopCategory() {
     );
   });
 }
-initTopCategory();
+
+// Gọi khi DOM sẵn sàng
+$(document).ready(() => initTopCategory());

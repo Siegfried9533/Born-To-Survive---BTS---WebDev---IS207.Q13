@@ -49,6 +49,6 @@ class Store extends Model
     // Một Cửa hàng có nhiều Hóa đơn
     public function invoices()
     {
-        return $this->hasMany(Invoice::class, 'StoreID', 'StoreID');
+        return $this->hasMany(Invoices::class, 'StoreID', 'StoreID');
     }
 }

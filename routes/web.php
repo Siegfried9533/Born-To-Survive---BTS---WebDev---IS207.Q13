@@ -49,3 +49,13 @@ Route::get('/fake-data/{filename}', function ($filename) {
 
     return response()->file($path, ['Content-Type' => 'text/plain']);
 })->where('filename', '[A-Za-z0-9_\-\.]+');
+
+// Serve Blade partials for client-side component loader
+Route::get('/components/{name}', function ($name) {
+    $allowed = ['header', 'footer', 'sidebar', 'filter'];
+    if (! in_array($name, $allowed, true)) {
+        abort(404);
+    }
+
+    return view('partials.' . $name);
+})->where('name', '[a-zA-Z0-9_-]+');

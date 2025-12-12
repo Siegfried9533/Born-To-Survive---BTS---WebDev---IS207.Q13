@@ -1,0 +1,6 @@
+StoreID,Name,City,Country,ZIPCode,Latitude,Longitude,created_at,updated_at
+S001,Modalab Store 1,Hà Nội,Vietnam,101000,0,0,2024-01-01 00:00:00,2024-01-01 00:00:00
+S002,Modalab Store 2,HCM,Vietnam,102000,0,0,2024-01-01 00:00:00,2024-01-01 00:00:00
+S003,Modalab Store 3,Đà Nẵng,Vietnam,103000,0,0,2024-01-01 00:00:00,2024-01-01 00:00:00
+S004,Modalab Store 4,Cần Thơ,Vietnam,104000,0,0,2024-01-01 00:00:00,2024-01-01 00:00:00
+S005,Modalab Store 5,Hải Phòng,Vietnam,105000,0,0,2024-01-01 00:00:00,2024-01-01 00:00:00

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Test API Call</title>
+        <style>
+            body {
+                font-family: monospace;
+                padding: 20px;
+                background: #1e1e1e;
+                color: #d4d4d4;
+            }
+            .log {
+                background: #252526;
+                padding: 10px;
+                margin: 10px 0;
+                border-left: 3px solid #007acc;
+                border-radius: 4px;
+            }
+            .success {
+                border-left-color: #4ec9b0;
+            }
+            .error {
+                border-left-color: #f48771;
+            }
+            .warning {
+                border-left-color: #dcdcaa;
+            }
+            pre {
+                background: #1e1e1e;
+                padding: 10px;
+                border-radius: 4px;
+                overflow-x: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>🔍 Test API Connection - Overview Page</h1>
+        <div id="logs"></div>
+
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script>
+            const logs = document.getElementById("logs");
+
+            function log(message, type = "log") {
+                const div = document.createElement("div");
+                div.className = `log ${type}`;
+                div.textContent = message;
+                logs.appendChild(div);
+                console.log(message);
+            }
+
+            // Test 1: Check window.Laravel
+            log("📋 Test 1: Checking window.Laravel...", "log");
+            window.Laravel = { baseUrl: "" };
+            log(
+                `✅ window.Laravel.baseUrl = "${window.Laravel.baseUrl}"`,
+                "success"
+            );
+
+            // Test 2: Check jQuery
+            log("📋 Test 2: Checking jQuery...", "log");
+            if (typeof $ !== "undefined") {
+                log(`✅ jQuery version: ${$.fn.jquery}`, "success");
+            } else {
+                log("❌ jQuery not loaded!", "error");
+            }
+
+            // Test 3: Construct API URL
+            const baseUrl = window.Laravel.baseUrl || window.location.origin;
+            const apiUrl = `${baseUrl}/api/dashboard/overview`;
+            log(`📋 Test 3: API URL constructed`, "log");
+            log(`🔗 ${apiUrl}`, "success");
+
+            // Test 4: Call API with jQuery
+            log("📋 Test 4: Calling API with jQuery $.get()...", "log");
+
+            $.get(apiUrl)
+                .done(function (response) {
+                    log("✅ API call SUCCESS!", "success");
+                    log(
+                        `📊 Response keys: ${Object.keys(response).join(", ")}`,
+                        "success"
+                    );
+
+                    // Check required keys
+                    const requiredKeys = [
+                        "GMV_Evolution",
+                        "Modalab_Synthesis",
+                        "Sales_Channels",
+                    ];
+                    requiredKeys.forEach((key) => {
+                        if (response[key]) {
+                            log(`✅ ${key} - OK`, "success");
+                        } else {
+                            log(`❌ ${key} - MISSING`, "error");
+                        }
+                    });
+
+                    // Display JSON
+                    const pre = document.createElement("pre");
+                    pre.textContent = JSON.stringify(response, null, 2);
+                    logs.appendChild(pre);
+                })
+                .fail(function (xhr, status, error) {
+                    log(`❌ API call FAILED!`, "error");
+                    log(`Status: ${status}`, "error");
+                    log(`Error: ${error}`, "error");
+                    log(`Response: ${xhr.responseText}`, "error");
+                });
+
+            // Test 5: Call API with fetch()
+            log("📋 Test 5: Calling API with fetch()...", "log");
+
+            fetch(apiUrl)
+                .then((response) => {
+                    log(`✅ Fetch status: ${response.status}`, "success");
+                    return response.json();
+                })
+                .then((data) => {
+                    log("✅ Fetch call SUCCESS!", "success");
+                    log(
+                        `📊 Data received: ${Object.keys(data).length} keys`,
+                        "success"
+                    );
+                })
+                .catch((error) => {
+                    log(`❌ Fetch call FAILED: ${error.message}`, "error");
+                });
+
+            // Test 6: Check canvas elements (simulate overview page)
+            log("📋 Test 6: Checking if canvas elements would exist...", "log");
+            const canvasIds = [
+                "modalabChart",
+                "salesChannelsChart",
+                "gmvEvolutionChart",
+            ];
+            canvasIds.forEach((id) => {
+                const exists = document.getElementById(id);
+                if (exists) {
+                    log(`✅ #${id} exists`, "success");
+                } else {
+                    log(
+                        `⚠️ #${id} not found (normal for test page)`,
+                        "warning"
+                    );
+                }
+            });
+        </script>
+    </body>
+</html>

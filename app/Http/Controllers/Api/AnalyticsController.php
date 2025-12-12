@@ -49,10 +49,11 @@ class AnalyticsController extends Controller
                 'products.ProdID',
                 'products.Description as ProductName',
                 'products.Category',
+                'products.SubCategory',
                 DB::raw('COALESCE(SUM(invoice_lines.Quantity), 0) as total_sold'),
                 DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as revenue')
             )
-            ->groupBy('products.ProdID', 'products.Description', 'products.Category')
+            ->groupBy('products.ProdID', 'products.Description', 'products.Category', 'products.SubCategory')
             ->orderByDesc('revenue')
             ->get();
 
