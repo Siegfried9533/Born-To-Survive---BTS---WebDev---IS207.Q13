@@ -5,18 +5,24 @@ import $ from 'jquery';
 // =======================================================
 console.log("🔧 top-stores.js file đã được load");
 
-$(document).ready(function() {
-  initTopStores();
-});
+// $(document).ready(function() {
+//   initTopStores();
+// });
 
 function initTopStores() {
-  if ($("#topStoresTable").length === 0) return;
-  
   console.log("🚀 Bắt đầu khởi tạo Top Stores");
   console.log("📄 DOM ready - tiến hành khởi tạo bảng stores");
-  
+
   const $tbody = $("#storesTable tbody");
-  console.log("🎯 Tìm tbody element:", $tbody.length > 0 ? "✅ Tìm thấy" : "❌ Không tìm thấy");
+  const hasTopStoresTable = $("#topStoresTable").length > 0;
+  const hasStoresTable = $("#storesTable").length > 0 && $tbody.length > 0;
+
+  console.log("🎯 Tìm #topStoresTable:", hasTopStoresTable ? "✅ Tìm thấy" : "❌ Không tìm thấy");
+  console.log("🎯 Tìm #storesTable tbody:", $tbody.length > 0 ? "✅ Tìm thấy" : "❌ Không tìm thấy");
+
+  if (!hasTopStoresTable && !hasStoresTable) {
+    console.warn("Không tìm thấy #topStoresTable hoặc #storesTable tbody — vẫn sẽ gọi API để kiểm tra kết nối.");
+  }
   
   // 1. Thay đổi đường dẫn tới API Laravel của bạn
   // Route hiện có là /api/analytics/stores (routes/api.php)
@@ -191,3 +197,7 @@ function initTopStores() {
     sortAndRender(currentSort.col, currentSort.asc);
   });
 }
+
+
+// Gọi khi DOM sẵn sàng
+$(document).ready(() => initTopStores());
