@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/analytics/stores', [AnalyticsController::class, 'getAllStores']); 
+Route::get('/analytics/stores', [StoreController::class, 'index']); 
 Route::get('/products/categories', [ProductController::class, 'getCategories']);
 Route::apiResource('products', ProductController::class);
 

@@ -90,7 +90,7 @@ function initTopStores() {
         const name = String(pick(item, ['Name','name','StoreName','store_name'], '') || '').trim();
         const city = String(pick(item, ['City','city','Town','town'], '') || '').trim();
         const country = String(pick(item, ['Country','country','country_code'], 'VN') || 'VN').trim();
-        const zip = String(pick(item, ['ZIPCode','zip','zip_code','postalCode'], '') || '').trim();
+        const zip = String(pick(item, ['ZIPCode','zip','ZipCode','postalCode'], '') || '').trim();
 
         const latRaw = pick(item, ['Latitude','latitude','Lat','lat'], 0);
         const lngRaw = pick(item, ['Longitude','longitude','Lng','lng'], 0);

@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -20,13 +21,13 @@ class ProductController extends Controller
         // Khởi tạo query
         $query = Product::query();
         
-        // Tính năng lọc theo Danh mục (nếu có gửi lên ?category=Ao)
+        // Lọc theo Danh mục
         if ($request->has('category')) {
             $query->where('Category', $request->category);
         }
 
-        // Lấy danh sách và phân trang (10 sản phẩm/trang)
-        // orderByDesc('created_at') để sản phẩm mới nhất lên đầu
+        // Sắp xếp sản phẩm mới nhất lên đầu
+        // Lưu ý: Đảm bảo bảng products có timestamps (created_at)
         return response()->json([
             'status' => 'success',
             'data' => $query->orderByDesc('created_at')->paginate(10)
@@ -39,15 +40,20 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate dữ liệu đầu vào
+        // Validate dữ liệu đầu vào theo DB mới
         $validator = Validator::make($request->all(), [
-            'ProdID' => 'required|string|max:10|unique:products,ProdID', // ID không được trùng
+            // ProductID là số nguyên, bắt buộc nhập (vì migration dùng integer()->primary())
+            'ProductID' => 'required|integer|unique:products,ProductID', 
             'Description' => 'required|string|max:255',
-            'Category' => 'required|string',
-            'ProductionCost' => 'integer|min:0'
+            'Category' => 'required|string|max:255',
+            'SubCategory' => 'nullable|string|max:255',
+            'Color' => 'nullable|string|max:255',
+            'Size' => 'nullable|string|max:255',
+            'ProductCost' => 'integer|min:0' // Tên cột mới là ProductCost
         ], [
-            'ProdID.unique' => 'Mã sản phẩm này đã tồn tại!',
-            'ProdID.required' => 'Vui lòng nhập mã sản phẩm.'
+            'ProductID.unique' => 'Mã ID sản phẩm này đã tồn tại!',
+            'ProductID.required' => 'Vui lòng nhập mã ID sản phẩm.',
+            'ProductID.integer' => 'Mã sản phẩm phải là số nguyên.'
         ]);
 
         if ($validator->fails()) {
@@ -68,37 +74,56 @@ class ProductController extends Controller
         }
     }
 
+/**
+     * 3. GET /api/products/categories
+     * Tối ưu hóa: Dùng leftJoinSub để tính toán trước khi Group
+     */
     /**
      * 3. GET /api/products/categories
-     * Lấy danh sách các Category với doanh thu (Delta GMV + InStore GMV)
+     * Lấy danh sách Category + Tổng doanh thu (delta_gmv)
      */
     public function getCategories()
     {
         try {
-            // Lấy danh mục với Delta GMV (tổng doanh thu) và InStore GMV (doanh thu trong cửa hàng)
-            // Delta GMV = Tổng doanh thu từ tất cả các hóa đơn
-            // InStore GMV = Tổng doanh thu từ các hóa đơn có TransactionType = "In-Store" (nếu khả dụng)
-            $categories = DB::table('products')
+            // BƯỚC 1: Tạo bảng tạm tính tổng tiền cho TỪNG SẢN PHẨM trước
+            // Giúp giảm tải cho database thay vì phải cộng hàng triệu dòng lúc Group By Category
+            $transStats = \DB::table('transactions')
+                ->select(
+                    'ProductID',
+                    \DB::raw('SUM(LineTotal) as total_revenue')
+                )
+                ->groupBy('ProductID');
+
+            // BƯỚC 2: Join bảng Products với bảng tạm ở trên để gom nhóm theo Category
+            $categories = \DB::table('products')
+                // Join với subquery
+                ->leftJoinSub($transStats, 'stats', function ($join) {
+                    $join->on('products.ProductID', '=', 'stats.ProductID');
+                })
                 ->select(
                     'products.Category',
-                    DB::raw('COUNT(DISTINCT products.ProdID) as product_count'),
-                    DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as delta_gmv'),
-                    // InStore GMV: tính tổng doanh thu (nếu không có TransactionType hoặc = "In-Store")
-                    DB::raw('COALESCE(SUM(CASE WHEN invoices.TransactionType IS NULL OR invoices.TransactionType = "In-Store" THEN (invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount ELSE 0 END), 0) as instore_gmv')
+                    
+                    // Đếm số lượng sản phẩm trong category
+                    \DB::raw('COUNT(products.ProductID) as product_count'),
+                    
+                    // Tổng doanh thu (Cộng dồn từ doanh thu từng sản phẩm)
+                    \DB::raw('COALESCE(SUM(stats.total_revenue), 0) as delta_gmv')
                 )
+                // Loại bỏ category rỗng
                 ->whereNotNull('products.Category')
-                ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
-                ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
-                ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
+                ->where('products.Category', '!=', '')
+                
                 ->groupBy('products.Category')
-                ->orderByDesc('delta_gmv')
+                ->orderByDesc('delta_gmv') // Sắp xếp doanh thu cao nhất lên đầu
                 ->get();
-            
-            \Log::info('Categories API response:', ['categories' => $categories, 'count' => count($categories)]);
-            
-            return response()->json(['status' => 'success', 'data' => $categories]);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $categories
+            ]);
+
         } catch (\Exception $e) {
-            \Log::error('Error in getCategories:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            \Log::error('Error in getCategories:', ['error' => $e->getMessage()]);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
@@ -109,8 +134,11 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        // Tìm và nạp luôn danh sách biến thể (SKUs) của sản phẩm đó
-        $product = Product::with('skus')->find($id);
+        // Database mới không còn bảng product_skus riêng biệt
+        // (Thông tin Size/Color nằm ngay trong Products hoặc Transactions)
+        // Nên chỉ cần lấy thông tin Product cơ bản
+        
+        $product = Product::find($id);
 
         if (!$product) {
             return response()->json(['status' => 'error', 'message' => 'Không tìm thấy sản phẩm'], 404);
