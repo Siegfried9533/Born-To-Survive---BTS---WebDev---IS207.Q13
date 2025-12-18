@@ -34,7 +34,6 @@ export const fetchSalesAnalytics = (from, to) => {
 };
 
 // --- NHÓM DASHBOARD ---
-// resources/js/api.js
 export const fetchDashboardOverview = (params = {}) => {
     return apiClient.get(`/dashboard/overview`, { params });
 };
@@ -43,6 +42,11 @@ export const fetchDashboardOverview = (params = {}) => {
 // Hàm lấy toàn bộ khách hàng để export
 export const fetchAllCustomersForExport = () => {
     return apiClient.get(`/analytics/customers?limit=all`);
+};
+
+// Lấy danh sách store (dùng cho filter overview)
+export const fetchStores = () => {
+    return apiClient.get(`/analytics/stores`);
 };
 
 // --- NHÓM CHAT ---

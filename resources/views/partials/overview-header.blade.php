@@ -48,11 +48,11 @@
             <button type="button" class="date-icon-btn" id="calendarTriggerBtn">
                 <i class="fa-solid fa-calendar-days date-icon"></i>
             </button>
-            <input type="text" class="date-input" id="startDateDisplay" readonly>
-            <span class="date-separator fw-bold text-dark">To</span>
-            <input type="text" class="date-input" id="endDateDisplay" readonly>
-            <input type="hidden" id="startDate" value="25-07-2030">
-            <input type="hidden" id="endDate" value="29-07-2030">
+            <input type="text" class="date-input" id="startDateDisplay" readonly placeholder="Select a date">
+            <span class="date-separator fw-bold text-dark">Compared to</span>
+            <input type="text" class="date-input" id="endDateDisplay" readonly placeholder="Auto previous year">
+            <input type="hidden" id="startDate" value="">
+            <input type="hidden" id="endDate" value="">
         </div>
     </div>
 
