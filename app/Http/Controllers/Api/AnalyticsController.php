@@ -20,12 +20,7 @@ class AnalyticsController extends Controller
 
         // 2. Bắt đầu Query Builder
         $query = DB::table('products')
-            // Join sang SKU
-            ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
-            // Join sang Invoice Lines
-            ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
-            // MỚI: Join sang Invoices để lấy ngày tháng
-            ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID');
+            ->leftJoin('transactions', 'products.ProductID', '=', 'transactions.ProductID');
 
         // 3. Áp dụng bộ lọc (Chỉ lọc nếu người dùng có gửi tham số)
         
@@ -36,24 +31,24 @@ class AnalyticsController extends Controller
 
         // Lọc theo ngày bắt đầu
         if ($fromDate) {
-            $query->whereDate('invoices.Date', '>=', $fromDate);
+            $query->whereDate('transactions.DATE', '>=', $fromDate);
         }
 
         // Lọc theo ngày kết thúc
         if ($toDate) {
-            $query->whereDate('invoices.Date', '<=', $toDate);
+            $query->whereDate('transactions.DATE', '<=', $toDate);
         }
 
         // 4. Chọn cột và Tính toán (Giữ nguyên logic cũ)
         $products = $query->select(
-                'products.ProdID',
+                'products.ProductID',
                 'products.Description as ProductName',
                 'products.Category',
                 'products.SubCategory',
-                DB::raw('COALESCE(SUM(invoice_lines.Quantity), 0) as total_sold'),
-                DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as revenue')
+                DB::raw('COALESCE(SUM(transactions.Quantity), 0) as total_sold'),
+                DB::raw('COALESCE(SUM(CASE WHEN transactions.LineTotal IS NOT NULL THEN transactions.LineTotal ELSE (transactions.UnitPrice * transactions.Quantity) END), 0) as revenue')
             )
-            ->groupBy('products.ProdID', 'products.Description', 'products.Category', 'products.SubCategory')
+            ->groupBy('products.ProductID', 'products.Description', 'products.Category', 'products.SubCategory')
             ->orderByDesc('revenue')
             ->get();
 
@@ -109,12 +104,11 @@ class AnalyticsController extends Controller
         }
 
         // Tính toán các chỉ số cơ bản
-        $metrics = DB::table('invoices')
-            ->join('invoice_lines', 'invoices.InvoiceID', '=', 'invoice_lines.InvoiceID')
-            ->where('invoices.StoreID', $id) // Chỉ lấy của shop này
+        $metrics = DB::table('transactions')
+            ->where('transactions.StoreID', $id)
             ->select(
-                DB::raw('COUNT(DISTINCT invoices.InvoiceID) as total_orders'),
-                DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as total_revenue')
+                DB::raw('COUNT(DISTINCT transactions.InvoiceID) as total_orders'),
+                DB::raw('COALESCE(SUM(CASE WHEN transactions.LineTotal IS NOT NULL THEN transactions.LineTotal ELSE (transactions.UnitPrice * transactions.Quantity) END), 0) as total_revenue')
             )
             ->first();
 
@@ -127,13 +121,11 @@ class AnalyticsController extends Controller
         $employeeCount = DB::table('employees')->where('StoreID', $id)->count();
 
         // Tìm sản phẩm bán chạy nhất của riêng Shop này
-        $topProduct = DB::table('invoice_lines')
-            ->join('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID') // Nối để lấy StoreID
-            ->join('product_skus', 'invoice_lines.SKU', '=', 'product_skus.SKU')
-            ->join('products', 'product_skus.ProdID', '=', 'products.ProdID')
-            ->where('invoices.StoreID', $id)
-            ->select('products.Description', DB::raw('SUM(invoice_lines.Quantity) as sold_qty'))
-            ->groupBy('products.ProdID', 'products.Description')
+        $topProduct = DB::table('transactions')
+            ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
+            ->where('transactions.StoreID', $id)
+            ->select('products.Description', DB::raw('SUM(transactions.Quantity) as sold_qty'))
+            ->groupBy('products.ProductID', 'products.Description')
             ->orderByDesc('sold_qty')
             ->first();
 
@@ -141,7 +133,7 @@ class AnalyticsController extends Controller
             'status' => 'success',
             'store_info' => [
                 'id' => $store->StoreID,
-                'name' => $store->Name,
+                'name' => $store->StoreName,
                 'city' => $store->City
             ],
             'kpis' => [

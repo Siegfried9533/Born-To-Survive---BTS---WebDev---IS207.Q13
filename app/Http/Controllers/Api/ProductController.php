@@ -41,13 +41,16 @@ class ProductController extends Controller
     {
         // Validate dữ liệu đầu vào
         $validator = Validator::make($request->all(), [
-            'ProdID' => 'required|string|max:10|unique:products,ProdID', // ID không được trùng
+            'ProductID' => 'required|integer|unique:products,ProductID', // ID không được trùng
             'Description' => 'required|string|max:255',
-            'Category' => 'required|string',
-            'ProductionCost' => 'integer|min:0'
+            'Category' => 'nullable|string',
+            'SubCategory' => 'nullable|string',
+            'Color' => 'nullable|string',
+            'Size' => 'nullable|string',
+            'ProductCost' => 'nullable|integer|min:0'
         ], [
-            'ProdID.unique' => 'Mã sản phẩm này đã tồn tại!',
-            'ProdID.required' => 'Vui lòng nhập mã sản phẩm.'
+            'ProductID.unique' => 'Mã sản phẩm này đã tồn tại!',
+            'ProductID.required' => 'Vui lòng nhập mã sản phẩm.'
         ]);
 
         if ($validator->fails()) {
@@ -75,21 +78,16 @@ class ProductController extends Controller
     public function getCategories()
     {
         try {
-            // Lấy danh mục với Delta GMV (tổng doanh thu) và InStore GMV (doanh thu trong cửa hàng)
-            // Delta GMV = Tổng doanh thu từ tất cả các hóa đơn
-            // InStore GMV = Tổng doanh thu từ các hóa đơn có TransactionType = "In-Store" (nếu khả dụng)
+            // Thống kê theo danh mục dựa trên bảng transactions mới
             $categories = DB::table('products')
+                ->leftJoin('transactions', 'products.ProductID', '=', 'transactions.ProductID')
+                ->whereNotNull('products.Category')
                 ->select(
                     'products.Category',
-                    DB::raw('COUNT(DISTINCT products.ProdID) as product_count'),
-                    DB::raw('COALESCE(SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount), 0) as delta_gmv'),
-                    // InStore GMV: tính tổng doanh thu (nếu không có TransactionType hoặc = "In-Store")
-                    DB::raw('COALESCE(SUM(CASE WHEN invoices.TransactionType IS NULL OR invoices.TransactionType = "In-Store" THEN (invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount ELSE 0 END), 0) as instore_gmv')
+                    DB::raw('COUNT(DISTINCT products.ProductID) as product_count'),
+                    DB::raw('COALESCE(SUM(CASE WHEN transactions.LineTotal IS NOT NULL THEN transactions.LineTotal ELSE (transactions.UnitPrice * transactions.Quantity) END), 0) as delta_gmv'),
+                    DB::raw('COALESCE(SUM(CASE WHEN transactions.TransactionType IS NULL OR transactions.TransactionType = "In-Store" THEN COALESCE(transactions.LineTotal, transactions.UnitPrice * transactions.Quantity) ELSE 0 END), 0) as instore_gmv')
                 )
-                ->whereNotNull('products.Category')
-                ->leftJoin('product_skus', 'products.ProdID', '=', 'product_skus.ProdID')
-                ->leftJoin('invoice_lines', 'product_skus.SKU', '=', 'invoice_lines.SKU')
-                ->leftJoin('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
                 ->groupBy('products.Category')
                 ->orderByDesc('delta_gmv')
                 ->get();
@@ -109,8 +107,7 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        // Tìm và nạp luôn danh sách biến thể (SKUs) của sản phẩm đó
-        $product = Product::with('skus')->find($id);
+        $product = Product::find($id);
 
         if (!$product) {
             return response()->json(['status' => 'error', 'message' => 'Không tìm thấy sản phẩm'], 404);

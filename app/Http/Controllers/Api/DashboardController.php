@@ -11,31 +11,33 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Biểu thức tính giá trị dòng giao dịch (dùng chung cho mọi thống kê)
+        $amountExpr = DB::raw('COALESCE(transactions.LineTotal, transactions.Quantity * transactions.UnitPrice)');
+
         // 1. TÍNH TỔNG DOANH THU (Total Revenue) THÁNG HIỆN TẠI
         // Logic: Tổng (Số lượng * Đơn giá) - Giảm giá
-        $totalRevenue = DB::table('invoice_lines')
-            ->join('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
-            ->whereMonth('invoices.Date', Carbon::now()->month)
-            ->whereYear('invoices.Date', Carbon::now()->year)
-            ->sum(DB::raw('(invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount'));
+        $totalRevenue = DB::table('transactions')
+            ->whereMonth('transactions.DATE', Carbon::now()->month)
+            ->whereYear('transactions.DATE', Carbon::now()->year)
+            ->sum($amountExpr);
 
         // 2. ĐƠN HÀNG MỚI (New Orders)
-        // Logic: Đếm số lượng transaction được tạo trong ngày hôm nay
-        $newOrders = DB::table('invoices')
-            ->whereDate('Date', Carbon::today())
-            ->count();
+        // Logic: Đếm số lượng đơn (InvoiceID) được tạo trong ngày hôm nay
+        $newOrders = DB::table('transactions')
+            ->whereDate('DATE', Carbon::today())
+            ->distinct('InvoiceID')
+            ->count('InvoiceID');
 
         // 3. SẢN PHẨM BÁN CHẠY (Top Products)
-        // Logic: Join bảng chi tiết -> SKU -> Sản phẩm. Group by Tên sản phẩm và sắp xếp theo tổng số lượng bán.
-        $topProducts = DB::table('invoice_lines')
-            ->join('product_skus', 'invoice_lines.SKU', '=', 'product_skus.SKU')
-            ->join('products', 'product_skus.ProdID', '=', 'products.ProdID')
+        // Logic: Join transactions -> products. Group by Tên sản phẩm và sắp xếp theo tổng số lượng bán.
+        $topProducts = DB::table('transactions')
+            ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
             ->select(
-                'products.ProdID as product_id',
-                DB::raw('SUM(invoice_lines.Quantity) as total_sold'),
-                DB::raw('SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount) as revenue_generated')
+                'products.ProductID as product_id',
+                DB::raw('SUM(transactions.Quantity) as total_sold'),
+                DB::raw("SUM($amountExpr) as revenue_generated")
             )
-            ->groupBy('products.ProdID')
+            ->groupBy('products.ProductID')
             ->orderByDesc('total_sold')
             ->limit(5)
             ->get();
@@ -45,25 +47,24 @@ class DashboardController extends Controller
 
         // Alert A: Các mã giảm giá (Discounts) sắp hết hạn trong 7 ngày tới
         $expiringDiscounts = DB::table('discounts')
-            ->where('EndDate', '>=', Carbon::now())
-            ->where('EndDate', '<=', Carbon::now()->addDays(7))
-            ->select('Name', 'EndDate')
+            ->where('End', '>=', Carbon::now())
+            ->where('End', '<=', Carbon::now()->addDays(7))
+            ->select('Description', 'End')
             ->get();
 
         foreach ($expiringDiscounts as $discount) {
             $alerts[] = [
                 'type' => 'warning',
-                'message' => "Mã giảm giá '{$discount->Name}' sẽ hết hạn vào " . Carbon::parse($discount->EndDate)->format('d/m/Y')
+                'message' => "Chương trình giảm giá '{$discount->Description}' sẽ hết hạn vào " . Carbon::parse($discount->End)->format('d/m/Y')
             ];
         }
 
         // Alert B: Giao dịch giá trị lớn bất thường (Ví dụ > 10,000,000) trong ngày
         // Cần subquery để tính tổng giá trị từng đơn hàng
-        $highValueTrans = DB::table('invoice_lines')
-            ->join('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
-            ->whereDate('invoices.Date', Carbon::today())
-            ->select('invoices.InvoiceID', DB::raw('SUM((Quantity * UnitPrice) - Discount) as total_val'))
-            ->groupBy('invoices.InvoiceID')
+        $highValueTrans = DB::table('transactions')
+            ->whereDate('transactions.DATE', Carbon::today())
+            ->select('transactions.InvoiceID', DB::raw("SUM($amountExpr) as total_val"))
+            ->groupBy('transactions.InvoiceID')
             ->having('total_val', '>', 10000000) // Ngưỡng ví dụ: 10 triệu
             ->count();
 
@@ -78,11 +79,10 @@ class DashboardController extends Controller
         $startMonth = Carbon::now()->subMonths(11)->startOfMonth();
         $endMonth   = Carbon::now()->endOfMonth();
 
-        $gmvByMonth = DB::table('invoice_lines')
-            ->join('invoices', 'invoice_lines.InvoiceID', '=', 'invoices.InvoiceID')
-            ->whereBetween('invoices.Date', [$startMonth, $endMonth])
-            ->selectRaw('DATE_FORMAT(invoices.Date, "%Y-%m") as ym')
-            ->selectRaw('SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount) as gmv')
+        $gmvByMonth = DB::table('transactions')
+            ->whereBetween('transactions.DATE', [$startMonth, $endMonth])
+            ->selectRaw('DATE_FORMAT(transactions.DATE, "%Y-%m") as ym')
+            ->selectRaw("SUM($amountExpr) as gmv")
             ->groupBy('ym')
             ->orderBy('ym')
             ->pluck('gmv', 'ym'); // [ '2025-01' => 12345, ... ]
@@ -122,12 +122,11 @@ class DashboardController extends Controller
         ];
 
         // 6. MODALAB SYNTHESIS – TOP 6 CATEGORY THEO DOANH THU (%)
-        $categoryData = DB::table('invoice_lines')
-            ->join('product_skus', 'invoice_lines.SKU', '=', 'product_skus.SKU')
-            ->join('products', 'product_skus.ProdID', '=', 'products.ProdID')
+        $categoryData = DB::table('transactions')
+            ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
             ->select(
                 'products.Category as category',
-                DB::raw('SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount) as revenue')
+                DB::raw("SUM($amountExpr) as revenue")
             )
             ->groupBy('products.Category')
             ->orderByDesc('revenue')
@@ -157,7 +156,7 @@ class DashboardController extends Controller
         ];
 
         // 7. SALES CHANNELS – PHÂN BỔ THEO PHƯƠNG THỨC THANH TOÁN (%)
-        $channels = DB::table('invoices')
+        $channels = DB::table('transactions')
             ->select('PaymentMethod', DB::raw('COUNT(*) as total'))
             ->groupBy('PaymentMethod')
             ->get();

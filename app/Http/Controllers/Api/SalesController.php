@@ -18,23 +18,20 @@ class SalesController extends Controller
         $toDate = $request->input('to') ?? Carbon::now()->format('Y-m-d');
 
         // Gom nhóm tính toán
-        $salesData = Invoices::query()
-            // JOIN bảng chi tiết để lấy tiền
-            ->join('invoice_lines', 'invoices.InvoiceID', '=', 'invoice_lines.InvoiceID')
-            
+        $salesData = DB::table('transactions')
             ->select(
                 // Gom nhóm theo ngày (Bỏ giờ phút)
-                DB::raw('DATE(invoices.Date) as date'), 
+                DB::raw('DATE(transactions.DATE) as date'), 
                 
                 // Tính tổng doanh thu: SUM( (SL * Giá) - Giảm giá )
-                DB::raw('SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount) as revenue'),
+                DB::raw('SUM(CASE WHEN transactions.LineTotal IS NOT NULL THEN transactions.LineTotal ELSE (transactions.Quantity * transactions.UnitPrice) END) as revenue'),
                 
                 // Đếm tổng số đơn hàng trong ngày
-                DB::raw('COUNT(DISTINCT invoices.InvoiceID) as total_orders')
+                DB::raw('COUNT(DISTINCT transactions.InvoiceID) as total_orders')
             )
             
             // Lọc theo khoảng thời gian
-            ->whereBetween('invoices.Date', [$fromDate . ' 00:00:00', $toDate . ' 23:59:59'])
+            ->whereBetween('transactions.DATE', [$fromDate . ' 00:00:00', $toDate . ' 23:59:59'])
             
             // Gom nhóm và Sắp xếp
             ->groupBy('date')

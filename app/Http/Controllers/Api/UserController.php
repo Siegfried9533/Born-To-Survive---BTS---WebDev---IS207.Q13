@@ -21,14 +21,14 @@ class UserController extends Controller
             'password' => 'required|string|min:6',
             'name'     => 'required|string',
             'role'     => 'required|string',
-            'store_id' => 'required|string',
+            'store_id' => 'required|integer',
         ]);
 
         return DB::transaction(function () use ($data) {
 
             // Tạo Employee mới (EmpID random 6 ký tự)
             $emp = Employee::create([
-                'EmpID'    => Str::upper(Str::random(6)),
+                'EmployeeID'    => random_int(100000, 999999),
                 'Name'     => $data['name'],
                 'Position' => $data['role'],
                 'StoreID'  => $data['store_id'],
@@ -40,7 +40,7 @@ class UserController extends Controller
                 'Username' => $data['email'],
                 'Email'    => $data['email'],
                 'Password' => Hash::make($data['password']),
-                'EmpID'    => $emp->EmpID,
+                'EmployeeID'    => $emp->EmployeeID,
             ]);
 
             return response()->json($user->load('employee'), 201);
@@ -58,7 +58,7 @@ class UserController extends Controller
             'password' => 'sometimes|nullable|string|min:6',
             'name'     => 'sometimes|string',
             'role'     => 'sometimes|string',
-            'store_id' => 'sometimes|string',
+            'store_id' => 'sometimes|integer',
         ]);
 
         // Cập nhật Email (và Username nếu bạn muốn sync)

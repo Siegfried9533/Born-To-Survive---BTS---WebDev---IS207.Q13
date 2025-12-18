@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB; // Thêm thư viện này để chạy lệnh insert
 
 return new class extends Migration
 {
@@ -11,125 +12,126 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Bảng STORES (Cửa hàng)
-        Schema::create('stores', function (Blueprint $table) {
-            $table->string('StoreID', 10)->primary(); // Khóa chính là chuỗi
-            $table->string('Name', 255);
-            $table->string('City', 50)->nullable();
-            $table->string('Country', 50)->nullable();
-            $table->string('ZIPCode', 10)->nullable();
-            $table->string('Latitude', 20)->nullable();
-            $table->string('Longitude', 50)->nullable();
-            $table->timestamps();
-        });
-
-        // 2. Bảng EMPLOYEES (Nhân viên)
-        Schema::create('employees', function (Blueprint $table) {
-            $table->string('EmpID', 10)->primary();
-            $table->string('Name', 255);
-            $table->string('Position', 255)->nullable();
+        // 1. Bảng PRODUCTS (Sản phẩm)
+        Schema::create('products', function (Blueprint $table) {
+            // SQL: ProductID INTEGER PRIMARY KEY
+            // Lưu ý: Nếu ID không tự tăng thì dùng integer()->primary()
+            $table->integer('ProductID')->primary(); 
             
-            // Khóa ngoại liên kết với bảng STORES
-            $table->string('StoreID', 10);
-            $table->foreign('StoreID')->references('StoreID')->on('stores');
+            $table->string('Category', 255)->nullable();
+            $table->string('SubCategory', 255)->nullable();
+            $table->string('Description', 255)->nullable();
+            $table->string('Color', 255)->nullable();
+            $table->string('Size', 255)->nullable();
+            $table->integer('ProductCost')->nullable();
             
             $table->timestamps();
         });
 
-        // 3. Bảng CUSTOMERS (Khách hàng)
+        // 2. Bảng CUSTOMERS (Khách hàng)
         Schema::create('customers', function (Blueprint $table) {
-            $table->string('CusID', 10)->primary();
-            $table->string('Name', 255);
-            $table->string('Phone', 255)->nullable();
+            // SQL: CustomerID BIGINT PRIMARY KEY
+            $table->bigInteger('CustomerID')->primary(); 
+            
+            $table->string('Name', 255)->nullable();
             $table->string('Email', 255)->nullable();
-            $table->string('City', 50)->nullable();
-            $table->string('Country', 100)->nullable();
-            $table->string('Gender', 6)->nullable();
+            $table->string('Telephone', 255)->nullable();
+            $table->string('City', 255)->nullable();
+            $table->string('Country', 255)->nullable();
+            $table->string('Gender', 255)->nullable();
             $table->dateTime('DateOfBirth')->nullable();
             $table->string('JobTitle', 255)->nullable();
-            $table->timestamps();
-        });
-
-        // 4. Bảng PRODUCTS (Sản phẩm)
-        Schema::create('products', function (Blueprint $table) {
-            $table->string('ProdID', 10)->primary();
-            $table->string('Category', 255)->nullable();
-            $table->string('SubCategory', 255)->nullable();
-            $table->string('Description', 255)->nullable();
-            $table->integer('ProductionCost')->default(0);
-            $table->timestamps();
-        });
-
-        // 5. Bảng PRODUCT_SKUs (Chi tiết biến thể sản phẩm)
-        Schema::create('product_skus', function (Blueprint $table) {
-            $table->string('SKU', 10)->primary();
-            $table->string('Color', 20)->nullable();
-            $table->string('Size', 5)->nullable();
-            
-            // Khóa ngoại liên kết với PRODUCTS
-            $table->string('ProdID', 10);
-            $table->foreign('ProdID')->references('ProdID')->on('products');
             
             $table->timestamps();
         });
 
-        // 6. Bảng DISCOUNTS (Giảm giá)
+        // 3. Bảng DISCOUNTS (Giảm giá)
         Schema::create('discounts', function (Blueprint $table) {
-            $table->string('DiscountID', 10)->primary();
-            $table->string('Name', 50);
+            // SQL: DiscountID INTEGER IDENTITY(1,1) PRIMARY KEY
+            // IDENTITY(1,1) tương đương với increments trong Laravel
+            $table->integer('DiscountID')->primary(); 
+            
+            $table->decimal('Discount', 10, 2)->nullable();
+            $table->dateTime('Start')->nullable();
+            $table->dateTime('End')->nullable(); // 'End' là từ khóa SQL nhưng Laravel xử lý được
             $table->string('Description', 255)->nullable();
-            $table->float('DiscountRate')->default(0);
             $table->string('Category', 255)->nullable();
             $table->string('SubCategory', 255)->nullable();
-            $table->dateTime('StartDate')->nullable();
-            $table->dateTime('EndDate')->nullable();
+            
             $table->timestamps();
         });
 
-        // 7. Bảng INVOICES (Hóa đơn)
-        Schema::create('invoices', function (Blueprint $table) {
-            $table->string('InvoiceID', 10)->primary();
-            $table->dateTime('Date');
-            $table->string('TransactionType', 255)->nullable();
-            $table->string('PaymentMethod', 50)->nullable();
-            $table->string('Currency', 5)->default('USD');
+
+        // 4. Bảng STORES (Cửa hàng)
+        Schema::create('stores', function (Blueprint $table) {
+            // SQL: StoreID INTEGER PRIMARY KEY
+            $table->integer('StoreID')->primary();
             
-            // Các khóa ngoại
-            $table->string('CusID', 10);
-            $table->foreign('CusID')->references('CusID')->on('customers');
+            $table->string('Country', 255)->nullable();
+            $table->string('City', 255)->nullable();
+            $table->string('StoreName', 255)->nullable();
+            $table->integer('NumberOfEmployee')->nullable();
+            $table->string('ZipCode', 255)->nullable();
+            $table->string('Latitude', 255)->nullable();
+            $table->string('Longitude', 255)->nullable();
+            
+            $table->timestamps();
+        });
 
-            $table->string('EmpID', 10)->nullable();
-            $table->foreign('EmpID')->references('EmpID')->on('employees');
+        // 5. Bảng EMPLOYEES (Nhân viên) - Phụ thuộc vào STORES
+        Schema::create('employees', function (Blueprint $table) {
+            // SQL: EmployeeID INTEGER PRIMARY KEY
+            $table->integer('EmployeeID')->primary();
+            
+            $table->integer('StoreID'); // FK
+            $table->string('Name', 255)->nullable();
+            $table->string('Position', 255)->nullable();
+            
+            $table->timestamps();
 
-            $table->string('StoreID', 10)->nullable();
+            // Khóa ngoại: FK_Employee_Store
             $table->foreign('StoreID')->references('StoreID')->on('stores');
-            
-            $table->timestamps();
         });
 
-        // 8. Bảng INVOICE_LINES (Chi tiết hóa đơn)
-        Schema::create('invoice_lines', function (Blueprint $table) {
-            // Thiết lập khóa ngoại
-            $table->string('InvoiceID', 10);
-            $table->foreign('InvoiceID')->references('InvoiceID')->on('invoices');
-
-            $table->string('Line', 10); // Số dòng
+        // 6. Bảng TRANSACTIONS (Giao dịch) - Bảng trung tâm
+        Schema::create('transactions', function (Blueprint $table) {
+            // SQL: InvoiceID INTEGER IDENTITY(1,1) PRIMARY KEY
+            $table->integer('InvoiceID');
             
-            $table->integer('Quantity')->default(1);
-            $table->integer('UnitPrice')->default(0);
-            $table->integer('Discount')->default(0);
-
-            $table->string('SKU', 10);
-            $table->foreign('SKU')->references('SKU')->on('product_skus');
-
-            $table->string('DiscountID', 10)->nullable(); // Có thể không có mã giảm giá
-            $table->foreign('DiscountID')->references('DiscountID')->on('discounts');
+            $table->string('InvoiceHASH', 20)->nullable();
+            $table->integer('Line')->nullable();
             
-            // Thiết lập Khóa Chính Phức Hợp (Composite Primary Key)
-            // Vì trong hình PK nằm ở cả InvoiceID và Line
-            $table->primary(['InvoiceID', 'Line']);
+            // Các cột dùng làm khóa ngoại
+            $table->bigInteger('CustomerID'); // Phải khớp kiểu với CustomerID ở bảng customers
+            $table->integer('ProductID');     // Phải khớp kiểu với ProductID ở bảng products
+            $table->string('Size', 255)->nullable();
+            $table->string('Color', 255)->nullable();
+            $table->integer('UnitPrice')->nullable();
+            $table->integer('Quantity')->nullable();
+            $table->dateTime('DATE')->nullable();
+            $table->integer('DiscountID')->nullable(); // Có thể null vì logic discount
+            
+            $table->integer('LineTotal')->nullable();
+            
+            $table->integer('StoreID');
+            $table->integer('EmployeeID');
+
+            
+            $table->string('Currency', 255)->nullable();
+            $table->string('CurrencySymbol', 255)->nullable();
+            $table->string('SKU', 255)->nullable();
+            $table->string('TransactionType', 255)->nullable();
+            $table->string('PaymentMethod', 255)->nullable();
+            $table->integer('InvoiceTotal')->nullable();
             
             $table->timestamps();
+
+            // Thiết lập các khóa ngoại (Foreign Keys)
+            $table->foreign('CustomerID')->references('CustomerID')->on('customers');
+            $table->foreign('ProductID')->references('ProductID')->on('products');
+            $table->foreign('DiscountID')->references('DiscountID')->on('discounts');
+            $table->foreign('EmployeeID')->references('EmployeeID')->on('employees');
+            $table->foreign('StoreID')->references('StoreID')->on('stores');
         });
     }
 
@@ -138,14 +140,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Xóa bảng theo thứ tự ngược lại để tránh lỗi khóa ngoại
-        Schema::dropIfExists('invoice_lines');
-        Schema::dropIfExists('invoices');
-        Schema::dropIfExists('discounts');
-        Schema::dropIfExists('product_skus');
-        Schema::dropIfExists('products');
-        Schema::dropIfExists('customers');
+        // Xóa bảng con trước, bảng cha sau (Reverse Order)
+        Schema::dropIfExists('transactions');
         Schema::dropIfExists('employees');
         Schema::dropIfExists('stores');
+        Schema::dropIfExists('discounts_bridge');
+        Schema::dropIfExists('discounts');
+        Schema::dropIfExists('customers');
+        Schema::dropIfExists('products');
     }
 };
