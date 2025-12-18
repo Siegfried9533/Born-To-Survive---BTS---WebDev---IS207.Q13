@@ -43,6 +43,7 @@
         <ul class="submenu">
             <li class="submenu-item"><a href="{{ route('products.top-category') }}">Top Category</a></li>
             <li class="submenu-item"><a href="{{ route('products.top-products') }}">Top Products</a></li>
+            <li class="submenu-item"><a href="{{ route('products.top-subcategory') }}">Top SubCategory</a></li>
         </ul>
     </li>
 
@@ -55,7 +56,7 @@
             <i class="fa-solid fa-chevron-up toggle-icon"></i>
         </a>
         <ul class="submenu">
-            <li class="submenu-item"><a href="{{ route('top-stores') }}" class="nav-link {{ request()->routeIs('top-stores') ? 'active' : 'text-white' }}">Top Stores</a></li>
+            <li class="submenu-item"><a href="{{ route('top-stores') }}">Top Stores</a></li>
             <li class="submenu-item"><a href="#">Track Inventory</a></li>
         </ul>
     </li>

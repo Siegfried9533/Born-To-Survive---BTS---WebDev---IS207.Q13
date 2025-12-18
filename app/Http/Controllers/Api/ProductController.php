@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-
 class ProductController extends Controller
 {
 
@@ -27,12 +26,77 @@ class ProductController extends Controller
             $query->where('Category', $request->category);
         }
 
-        // Lấy danh sách và phân trang (10 sản phẩm/trang)
-        // orderByDesc('created_at') để sản phẩm mới nhất lên đầu
+        // Sắp xếp sản phẩm mới nhất lên đầu
+        // Lưu ý: Đảm bảo bảng products có timestamps (created_at)
         return response()->json([
             'status' => 'success',
             'data' => $query->orderByDesc('created_at')->paginate(10)
         ]);
+    }
+
+    /**
+     * 3b. GET /api/products/subcategories
+     * Lấy danh sách SubCategory + Tổng doanh thu (delta_gmv)
+     * Hành vi giống getCategories nhưng nhóm theo SubCategory
+     */
+    public function getSubCategories(Request $request)
+    {
+        try {
+            // Tạo bảng tạm tổng doanh thu theo ProductID (có thể lọc theo cửa hàng và ngày)
+            $transStats = DB::table('transactions')
+                ->select(
+                    'ProductID',
+                    DB::raw('SUM(LineTotal) as total_revenue')
+                );
+
+            if ($request->has('stores')) {
+                $ids = array_values(array_filter(array_map('trim', explode(',', $request->query('stores')))));
+                if (!empty($ids)) {
+                    $transStats->whereIn('StoreID', $ids);
+                }
+            }
+            if ($request->has('from_date')) {
+                $transStats->whereDate('DATE', '>=', $request->query('from_date'));
+            }
+            if ($request->has('to_date')) {
+                $transStats->whereDate('DATE', '<=', $request->query('to_date'));
+            }
+
+            $transStats = $transStats->groupBy('ProductID');
+
+            // Join products với bảng tạm và gom nhóm theo SubCategory
+            $subs = DB::table('products')
+                ->leftJoinSub($transStats, 'stats', function ($join) {
+                    $join->on('products.ProductID', '=', 'stats.ProductID');
+                })
+                ->select(
+                    'products.SubCategory',
+                    DB::raw('COUNT(products.ProductID) as product_count'),
+                    DB::raw('COALESCE(SUM(stats.total_revenue), 0) as delta_gmv')
+                )
+                ->whereNotNull('products.SubCategory')
+                ->where('products.SubCategory', '!=', '');
+
+            // Optional: allow filtering by parent categories
+            if ($request->has('categories')) {
+                $cats = array_values(array_filter(array_map('trim', explode(',', $request->query('categories')))));
+                if (!empty($cats)) {
+                    $subs = $subs->whereIn('products.Category', $cats);
+                }
+            }
+
+            $subs = $subs->groupBy('products.SubCategory')
+                ->orderByDesc('delta_gmv')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $subs
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in getSubCategories:', ['error' => $e->getMessage()]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -41,18 +105,20 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate dữ liệu đầu vào
+        // Validate dữ liệu đầu vào theo DB mới
         $validator = Validator::make($request->all(), [
-            'ProductID' => 'required|integer|unique:products,ProductID', // ID không được trùng
+            // ProductID là số nguyên, bắt buộc nhập (vì migration dùng integer()->primary())
+            'ProductID' => 'required|integer|unique:products,ProductID',
             'Description' => 'required|string|max:255',
-            'Category' => 'nullable|string',
-            'SubCategory' => 'nullable|string',
-            'Color' => 'nullable|string',
-            'Size' => 'nullable|string',
-            'ProductCost' => 'nullable|integer|min:0'
+            'Category' => 'required|string|max:255',
+            'SubCategory' => 'nullable|string|max:255',
+            'Color' => 'nullable|string|max:255',
+            'Size' => 'nullable|string|max:255',
+            'ProductCost' => 'integer|min:0' // Tên cột mới là ProductCost
         ], [
-            'ProductID.unique' => 'Mã sản phẩm này đã tồn tại!',
-            'ProductID.required' => 'Vui lòng nhập mã sản phẩm.'
+            'ProductID.unique' => 'Mã ID sản phẩm này đã tồn tại!',
+            'ProductID.required' => 'Vui lòng nhập mã ID sản phẩm.',
+            'ProductID.integer' => 'Mã sản phẩm phải là số nguyên.'
         ]);
 
         if ($validator->fails()) {
@@ -75,37 +141,71 @@ class ProductController extends Controller
 
     /**
      * 3. GET /api/products/categories
-     * Lấy danh sách các Category với doanh thu (Delta GMV + InStore GMV)
+     * Tối ưu hóa: Dùng leftJoinSub để tính toán trước khi Group
      */
-    public function getCategories()
+    /**
+     * 3. GET /api/products/categories
+     * Lấy danh sách Category + Tổng doanh thu (delta_gmv)
+     */
+    public function getCategories(Request $request)
     {
-        try {
-            // Thống kê theo danh mục dựa trên bảng transactions mới
-            $categories = DB::table('products')
-                ->leftJoin('transactions', 'products.ProductID', '=', 'transactions.ProductID')
-                ->whereNotNull('products.Category')
+        try { // BƯỚC 1: Tính toán tập trung tại bảng Transactions (Tối ưu hiệu năng)
+            $transStats = DB::table('transactions')
+                ->select(
+                    'ProductID',
+                    // Tổng doanh thu từng sản phẩm
+                    DB::raw('SUM(COALESCE(LineTotal, UnitPrice * Quantity)) as total_item_gmv'),
+                    // Doanh thu tại cửa hàng (giữ logic của bạn)
+                    DB::raw('SUM(CASE WHEN TransactionType IS NULL OR TransactionType = "In-Store" 
+                                THEN COALESCE(LineTotal, UnitPrice * Quantity) ELSE 0 END) as instore_item_gmv')
+                );
+
+            // Áp dụng các bộ lọc linh hoạt từ request (Điểm mạnh của Haideptrai)
+            if ($request->filled('stores')) {
+                $storeIds = array_filter(explode(',', $request->query('stores')));
+                $transStats->whereIn('StoreID', $storeIds);
+            }
+            if ($request->filled('from_date')) {
+                $transStats->whereDate('DATE', '>=', $request->query('from_date'));
+            }
+            if ($request->filled('to_date')) {
+                $transStats->whereDate('DATE', '<=', $request->query('to_date'));
+            }
+
+            $transStats = $transStats->groupBy('ProductID');
+
+            // BƯỚC 2: Join với bảng Products để nhóm theo Category
+            $query = DB::table('products')
+                ->leftJoinSub($transStats, 'stats', 'products.ProductID', '=', 'stats.ProductID')
                 ->select(
                     'products.Category',
                     DB::raw('COUNT(DISTINCT products.ProductID) as product_count'),
-                    DB::raw('COALESCE(SUM(CASE WHEN transactions.LineTotal IS NOT NULL THEN transactions.LineTotal ELSE (transactions.UnitPrice * transactions.Quantity) END), 0) as delta_gmv'),
-                    DB::raw('COALESCE(SUM(CASE WHEN transactions.TransactionType IS NULL OR transactions.TransactionType = "In-Store" THEN COALESCE(transactions.LineTotal, transactions.UnitPrice * transactions.Quantity) ELSE 0 END), 0) as instore_gmv')
+                    DB::raw('COALESCE(SUM(stats.total_item_gmv), 0) as delta_gmv'),
+                    DB::raw('COALESCE(SUM(stats.instore_item_gmv), 0) as instore_gmv')
                 )
-                ->groupBy('products.Category')
+                ->whereNotNull('products.Category')
+                ->where('products.Category', '!=', '');
+
+            // Lọc theo danh mục nếu có yêu cầu
+            if ($request->filled('categories')) {
+                $cats = array_filter(explode(',', $request->query('categories')));
+                $query->whereIn('products.Category', $cats);
+            }
+
+            $categories = $query->groupBy('products.Category')
                 ->orderByDesc('delta_gmv')
                 ->get()
                 ->map(function ($item) {
-                    // Cast sang số để JavaScript không phải parse
+                    // Ép kiểu dữ liệu (Điểm mạnh của Hòa - giúp Frontend chạy chuẩn)
                     return [
-                        'Category' => $item->Category,
+                        'Category'      => $item->Category,
                         'product_count' => (int) $item->product_count,
-                        'delta_gmv' => (float) $item->delta_gmv,
-                        'instore_gmv' => (float) $item->instore_gmv
+                        'delta_gmv'     => (float) $item->delta_gmv,
+                        'instore_gmv'   => (float) $item->instore_gmv
                     ];
                 });
 
-            \Log::info('Categories API response:', ['categories' => $categories, 'count' => count($categories)]);
-
-            // ✅ Fix: Bọc trong key "categories" để match với JavaScript
+            // BƯỚC 3: Trả về chuẩn cấu trúc JSON mà Frontend của bạn đang chờ
             return response()->json([
                 'status' => 'success',
                 'data' => [
@@ -113,17 +213,120 @@ class ProductController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in getCategories:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            Log::error('Error in getCategories:', ['error' => $e->getMessage()]);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
+    //         // Thống kê theo danh mục dựa trên bảng transactions mới
+    //         $categories = DB::table('products')
+    //             ->leftJoin('transactions', 'products.ProductID', '=', 'transactions.ProductID')
+    //             ->whereNotNull('products.Category')
+    //             ->select(
+    //                 'products.Category',
+    //                 DB::raw('COUNT(DISTINCT products.ProductID) as product_count'),
+    //                 DB::raw('COALESCE(SUM(CASE WHEN transactions.LineTotal IS NOT NULL THEN transactions.LineTotal ELSE (transactions.UnitPrice * transactions.Quantity) END), 0) as delta_gmv'),
+    //                 DB::raw('COALESCE(SUM(CASE WHEN transactions.TransactionType IS NULL OR transactions.TransactionType = "In-Store" THEN COALESCE(transactions.LineTotal, transactions.UnitPrice * transactions.Quantity) ELSE 0 END), 0) as instore_gmv')
+    //             )
+    //             ->groupBy('products.Category')
+    //             ->orderByDesc('delta_gmv')
+    //             ->get()
+    //             ->map(function ($item) {
+    //                 // Cast sang số để JavaScript không phải parse
+    //                 return [
+    //                     'Category' => $item->Category,
+    //                     'product_count' => (int) $item->product_count,
+    //                     'delta_gmv' => (float) $item->delta_gmv,
+    //                     'instore_gmv' => (float) $item->instore_gmv
+    //                 ];
+    //             });
 
-    /**
-     * 4. GET /api/products/{id}
-     * Xem chi tiết 1 sản phẩm
-     */
+    //         \Log::info('Categories API response:', ['categories' => $categories, 'count' => count($categories)]);
+
+    //         // ✅ Fix: Bọc trong key "categories" để match với JavaScript
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'data' => [
+    //                 'categories' => $categories
+    //             ]
+    //         ]);
+    //         // BƯỚC 1: Tạo bảng tạm tính tổng tiền cho TỪNG SẢN PHẨM trước
+    //         // Giúp giảm tải cho database thay vì phải cộng hàng triệu dòng lúc Group By Category
+    //         $transStats = \DB::table('transactions')
+    //             ->select(
+    //                 'ProductID',
+    //                 \DB::raw('SUM(LineTotal) as total_revenue')
+    //             );
+
+    //         // Apply optional filters to transactions aggregation (stores, date range)
+    //         // Query params: stores (csv of StoreID), from_date, to_date
+    //         if ($request->has('stores')) {
+    //             $ids = array_values(array_filter(array_map('trim', explode(',', $request->query('stores')))));
+    //             if (!empty($ids)) {
+    //                 $transStats->whereIn('StoreID', $ids);
+    //             }
+    //         }
+    //         if ($request->has('from_date')) {
+    //             $transStats->whereDate('DATE', '>=', $request->query('from_date'));
+    //         }
+    //         if ($request->has('to_date')) {
+    //             $transStats->whereDate('DATE', '<=', $request->query('to_date'));
+    //         }
+
+    //         $transStats = $transStats->groupBy('ProductID');
+
+    //         // BƯỚC 2: Join bảng Products với bảng tạm ở trên để gom nhóm theo Category
+    //         $categories = \DB::table('products')
+    //             // Join với subquery
+    //             ->leftJoinSub($transStats, 'stats', function ($join) {
+    //                 $join->on('products.ProductID', '=', 'stats.ProductID');
+    //             })
+    //             ->select(
+    //                 'products.Category',
+
+    //                 // Đếm số lượng sản phẩm trong category
+    //                 \DB::raw('COUNT(products.ProductID) as product_count'),
+
+    //                 // Tổng doanh thu (Cộng dồn từ doanh thu từng sản phẩm)
+    //                 \DB::raw('COALESCE(SUM(stats.total_revenue), 0) as delta_gmv')
+    //             )
+    //             // Loại bỏ category rỗng
+    //             ->whereNotNull('products.Category')
+    //             ->where('products.Category', '!=', '')
+    //             // Optional: if client passes categories, filter the result to those categories
+    //             ;
+
+    //         if ($request->has('categories')) {
+    //             $cats = array_values(array_filter(array_map('trim', explode(',', $request->query('categories')))));
+    //             if (!empty($cats)) {
+    //                 $categories = $categories->whereIn('products.Category', $cats);
+    //             }
+    //         }
+
+    //         $categories = $categories->groupBy('products.Category')
+    //             ->orderByDesc('delta_gmv') // Sắp xếp doanh thu cao nhất lên đầu
+    //             ->get();
+
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'data' => $categories
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         \Log::error('Error in getCategories:', ['error' => $e->getMessage()]);
+    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+    //     }
+    // }
+
+    // /**
+    //  * 4. GET /api/products/{id}
+    //  * Xem chi tiết 1 sản phẩm
+    //  */
     public function show($id)
     {
+        // Database mới không còn bảng product_skus riêng biệt
+        // (Thông tin Size/Color nằm ngay trong Products hoặc Transactions)
+        // Nên chỉ cần lấy thông tin Product cơ bản
+
         $product = Product::find($id);
 
         if (!$product) {

@@ -56,7 +56,8 @@ function initFilterComponent() {
     // Nhắm vào dropdown của group category bằng ID
     const $categoryDropdown = $("#category-filter-group .filter-dropdown");
     if (!$categoryDropdown.length) return;
-    const apiUrl = "/api/products/categories";
+      const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
+    const apiUrl = `${baseUrl}/api/products/categories`;
 
     // Hiển thị loading nhỏ trong dropdown
     const $header = $categoryDropdown.find(".filter-dropdown-header");
@@ -125,6 +126,86 @@ function initFilterComponent() {
     }
   }
 
+  // --- Helper 4: Tự động tạo Stores cho dropdown `store-filter-group` ---
+  function generateStores() {
+    const $storeDropdown = $("#store-filter-group .filter-dropdown");
+    if (!$storeDropdown.length) return;
+      const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
+    const apiUrl = `${baseUrl}/api/stores`;
+
+    const $header = $storeDropdown.find(".filter-dropdown-header");
+    const $loading = $("<div class='filter-loading text-muted'>Loading stores...</div>");
+    if ($header.length) {
+      $header.after($loading);
+    } else {
+      $storeDropdown.html($loading);
+    }
+
+    $.getJSON(apiUrl)
+      .done(function (resp) {
+        $loading.remove();
+        if (!resp || resp.status !== "success" || !resp.data) {
+          console.warn("Invalid stores response", resp);
+          fallbackStores();
+          return;
+        }
+
+        const stores = resp.data;
+        if (!stores.length) {
+          $storeDropdown.html('<div class="filter-item">No stores available</div>');
+          return;
+        }
+
+        let html = "";
+        stores.forEach(function (s, idx) {
+          const name = (s.StoreName || s.name || s.Store || (`Store ${s.StoreID || idx}`)).toString().trim();
+          const id = `store-${s.StoreID || idx}-${name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}`;
+          html += `\
+                <div class="filter-item">\
+                    <input type="checkbox" id="${id}" value="${s.StoreID}">\
+                    <label for="${id}">${name}</label>\
+                </div>`;
+        });
+
+        if ($header.length) {
+          $header.after(html);
+        } else {
+          $storeDropdown.html(html);
+        }
+
+        // After inserting store items update UI state for this group
+        const $group = $("#store-filter-group");
+        handleSelectionLimits($group);
+        updateDisplayText($group);
+      })
+      .fail(function (jqxhr, textStatus, error) {
+        $loading.remove();
+        console.error("Failed to load stores:", textStatus, error);
+        fallbackStores();
+      });
+
+    function fallbackStores() {
+      let html = "";
+      for (let i = 1; i <= 6; i++) {
+        html += `\
+                <div class="filter-item">\
+                    <input type="checkbox" id="store${i}" value="${i}">\
+                    <label for="store${i}">Store ${i}</label>\
+                </div>`;
+      }
+      if ($header.length) {
+        $header.after(html);
+      } else {
+        $storeDropdown.html(html);
+      }
+
+      // Ensure UI state is correct after fallback items inserted
+      const $group = $("#store-filter-group");
+      handleSelectionLimits($group);
+      updateDisplayText($group);
+    }
+  }
+
   // --- 1. Thêm header "Chọn tối đa X" ---
   $filterGroups.each(function () {
     const $group = $(this);
@@ -140,9 +221,12 @@ function initFilterComponent() {
 
   generateCategories();
 
+  // Tạo danh sách cửa hàng cho dropdown
+  generateStores();
+
   // --- 2. Mở/đóng dropdown khi click vào box ---
-  // Sửa: Dùng ID selector '#filter-container'
-  $("#filter-container").on("click", ".filter-display-box", function (e) {
+  // Dùng delegation trên document để chắc chắn handler được gắn
+  $(document).on("click", ".filter-display-box", function (e) {
     e.stopPropagation();
     const $currentGroup = $(this).closest(".filter-group");
     $(".filter-group").not($currentGroup).removeClass("open");
@@ -150,8 +234,8 @@ function initFilterComponent() {
   });
 
   // --- 3. Xử lý khi chọn một item (change) ---
-  // Sửa: Dùng ID selector '#filter-container'
-  $("#filter-container").on(
+  // Dùng delegation trên document để chắc chắn handler được gắn
+  $(document).on(
     "change",
     'input[type="checkbox"], input[type="radio"]',
     function () {
@@ -166,14 +250,52 @@ function initFilterComponent() {
     }
   );
 
+  // --- Apply filters: Thu thập lựa chọn và kích hoạt filter ---
+  function collectFilters() {
+    const categories = $("#category-filter-group input:checked")
+      .map(function () {
+        return $(this).val();
+      })
+      .get();
+
+    const stores = $("#store-filter-group input:checked")
+      .map(function () {
+        return $(this).val();
+      })
+      .get();
+
+    const sort = $("input[name='sort']:checked").val() || null;
+
+    const from_date = $("#startDate").length ? $("#startDate").val() : null;
+    const to_date = $("#endDate").length ? $("#endDate").val() : null;
+
+    return {
+      categories: categories,
+      stores: stores,
+      sort: sort,
+      from_date: from_date || null,
+      to_date: to_date || null,
+    };
+  }
+
+  $("#filter-container").on("click", ".btn-apply-filters", function (e) {
+    e.preventDefault();
+    $(document).trigger("filters:applied", [collectFilters()]);
+  });
+
+  // Auto-apply when date inputs change (no need to click Apply)
+  $(document).on('change', '#startDate, #endDate', function () {
+    $(document).trigger('filters:applied', [collectFilters()]);
+  });
+
   // --- 4. Đóng dropdown khi click ra ngoài ---
   $(window).on("click", function () {
     $filterGroups.removeClass("open");
   });
 
   // --- 5. Ngăn click BÊN TRONG dropdown làm đóng dropdown ---
-  // Sửa: Dùng ID selector '#filter-container'
-  $("#filter-container").on("click", ".filter-dropdown", function (e) {
+  // Dùng delegation trên document để chắc chắn handler được gắn
+  $(document).on("click", ".filter-dropdown", function (e) {
     e.stopPropagation();
   });
 

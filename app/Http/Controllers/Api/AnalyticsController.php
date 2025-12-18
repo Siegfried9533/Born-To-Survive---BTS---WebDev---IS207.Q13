@@ -17,6 +17,7 @@ class AnalyticsController extends Controller
     {
         // 1. Lấy tham số
         $category = $request->query('category') ?? $request->input('category');
+        $storesParam = $request->query('stores'); // CSV of StoreID
         $fromDate = $request->query('from_date') ?? $request->input('from_date');
         $toDate   = $request->query('to_date') ?? $request->input('to_date');
 
@@ -24,8 +25,19 @@ class AnalyticsController extends Controller
             ->leftJoin('transactions', 'products.ProductID', '=', 'transactions.ProductID');
 
         if ($category) {
-            $query->where('products.Category', 'like', '%' . $category . '%');
+        $cats = array_values(array_filter(array_map('trim', explode(',', $category))));
+        if (!empty($cats)) {
+            $query->whereIn('products.Category', $cats);
         }
+        }
+
+        if ($storesParam) {
+            $ids = array_values(array_filter(array_map('trim', explode(',', $storesParam))));
+            if (!empty($ids)) {
+                $query->whereIn('transactions.StoreID', $ids);
+            }
+        }
+
         if ($fromDate) {
             $query->whereDate('transactions.DATE', '>=', $fromDate);
         }
@@ -37,10 +49,11 @@ class AnalyticsController extends Controller
             'products.ProductID',
             'products.Description as ProductName',
             'products.Category',
+            'products.SubCategory',
             DB::raw('COALESCE(SUM(transactions.Quantity), 0) as total_sold'),
             DB::raw('COALESCE(SUM(CASE WHEN transactions.LineTotal IS NOT NULL THEN transactions.LineTotal ELSE (transactions.UnitPrice * transactions.Quantity) END), 0) as revenue')
         )
-            ->groupBy('products.ProductID', 'products.Description', 'products.Category')
+            ->groupBy('products.ProductID', 'products.Description', 'products.Category', 'products.SubCategory')
             ->orderByDesc('revenue')
             ->limit(10) // Giới hạn 10 để AI không bị quá tải token
             ->get();
@@ -52,7 +65,7 @@ class AnalyticsController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'filters' => compact('category', 'fromDate', 'toDate'),
+            'filters' => compact('category', 'storesParam', 'fromDate', 'toDate'),
             'data' => $products
         ]);
     }

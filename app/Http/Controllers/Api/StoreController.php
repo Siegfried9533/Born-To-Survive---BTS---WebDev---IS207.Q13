@@ -9,12 +9,149 @@ use Illuminate\Support\Facades\Validator;
 
 class StoreController extends Controller
 {
-    // ... Giữ lại hàm index() cũ nếu có ...
+/**
+     * 1. Lấy danh sách tất cả cửa hàng (Kèm Doanh số & Số nhân viên)
+     * GET /api/stores
+     */
+    public function index(Request $request)
+    {
+        // Nhận filter từ query params
+        $categoryParam = $request->query('category'); // CSV of categories
+        $storesParam = $request->query('stores'); // CSV of StoreID
+        $sort = $request->query('sort');
+        $fromDate = $request->query('from_date');
+        $toDate = $request->query('to_date');
+
+        // Sử dụng Query Builder + Raw SQL Subquery
+        // Chuẩn bị điều kiện ngày nếu có
+        $pdo = \DB::getPdo();
+        $dateSql = '';
+        if ($fromDate) {
+            $dateSql .= ' AND t.DATE >= ' . $pdo->quote($fromDate);
+        }
+        if ($toDate) {
+            $dateSql .= ' AND t.DATE <= ' . $pdo->quote($toDate);
+        }
+
+        // Chuẩn bị SQL cho catSelected (doanh thu chỉ cho các category được filter)
+        $catSelectedSql = '(SELECT 0) as catSelected';
+        if ($categoryParam) {
+            $cats = array_values(array_filter(array_map('trim', explode(',', $categoryParam))));
+            if (!empty($cats)) {
+                // Quote each category value to avoid SQL injection
+                $quoted = array_map(function($c) { return \DB::getPdo()->quote($c); }, $cats);
+                $inList = implode(',', $quoted);
+                $catSelectedSql = "(SELECT COALESCE(SUM(t.LineTotal), 0) FROM transactions t JOIN products p ON t.ProductID = p.ProductID WHERE t.StoreID = stores.StoreID AND p.Category IN ({$inList}) {$dateSql}) as catSelected";
+            }
+        }
+
+        $storesQuery = \DB::table('stores')
+            ->select(
+                'stores.StoreID',
+                'stores.StoreName',
+                'stores.City',
+                'stores.Country',
+                'stores.ZipCode',
+                'stores.NumberOfEmployee',
+                'stores.Latitude',
+                'stores.Longitude',
+                // Subquery 1: Tính tổng tiền trực tiếp (có thể lọc theo ngày)
+                \DB::raw('(SELECT COALESCE(SUM(LineTotal), 0) FROM transactions WHERE transactions.StoreID = stores.StoreID' .
+                           ($fromDate ? ' AND DATE >= ' . $pdo->quote($fromDate) : '') .
+                           ($toDate ? ' AND DATE <= ' . $pdo->quote($toDate) : '') .
+                           ') as revenue'),
+                // Subquery 2: Đếm nhân viên trực tiếp
+                \DB::raw('(SELECT COUNT(*) FROM employees WHERE employees.StoreID = stores.StoreID) as total_employees'),
+                // Subquery 3: Doanh thu cho các category được chọn (catSelected)
+                \DB::raw($catSelectedSql)
+            );
+
+        // Áp dụng filter: stores list
+        if ($storesParam) {
+            $ids = array_values(array_filter(array_map('trim', explode(',', $storesParam))));
+            if (!empty($ids)) {
+                $storesQuery->whereIn('stores.StoreID', $ids);
+            }
+        }
+
+        // Áp dụng filter: category (kiểm tra tồn tại giao dịch có sản phẩm cùng category)
+        if ($categoryParam) {
+            $cats = array_values(array_filter(array_map('trim', explode(',', $categoryParam))));
+            if (!empty($cats)) {
+                $storesQuery->whereExists(function($q) use ($cats, $fromDate, $toDate) {
+                    $q->select(\DB::raw(1))
+                      ->from('transactions')
+                      ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
+                      ->whereRaw('transactions.StoreID = stores.StoreID')
+                      ->whereIn('products.Category', $cats);
+
+                    if ($fromDate) {
+                        $q->whereDate('transactions.DATE', '>=', $fromDate);
+                    }
+                    if ($toDate) {
+                        $q->whereDate('transactions.DATE', '<=', $toDate);
+                    }
+                });
+            }
+        }
+
+        // Sắp xếp
+        if ($sort) {
+            if (in_array($sort, ['revenue', 'revenue_desc'])) {
+                $storesQuery->orderByDesc('revenue');
+            } elseif ($sort === 'revenue_asc') {
+                $storesQuery->orderBy('revenue', 'asc');
+            } else {
+                $storesQuery->orderBy('stores.StoreName', 'asc');
+            }
+        } else {
+            $storesQuery->orderBy('stores.StoreName', 'asc');
+        }
+
+        // Dùng paginate
+        $stores = $storesQuery->paginate(20);
+
+        return response()->json([
+            'status' => 'success',
+
+            // 1. Trả về mảng dữ liệu thuần (để Table hiển thị được ngay)
+            'data' => $stores->items(), 
+
+            // 2. Gửi kèm thông tin phân trang (để bạn làm nút Next/Prev)
+            'pagination' => [
+                'total' => $stores->total(),
+                'per_page' => $stores->perPage(),
+                'current_page' => $stores->currentPage(),
+                'last_page' => $stores->lastPage(),
+                'from' => $stores->firstItem(),
+                'to' => $stores->lastItem()
+            ]
+        ]);
+    }
 
     /**
-     * 1. Cập nhật thông tin cửa hàng
-     * PUT /api/stores/{id}
+     * 2. Xem chi tiết 1 Store + Doanh thu
      */
+    public function show($id)
+    {
+        $store = Store::withSum('transactions', 'LineTotal')
+                      ->withCount('employees')
+                      ->find($id);
+
+        if (!$store) {
+            return response()->json(['status' => 'error', 'message' => 'Không tìm thấy cửa hàng'], 404);
+        }
+
+        // Gán doanh thu vào biến dễ đọc
+        $revenue = $store->transactions_sum_line_total ?? 0;
+        $store->revenue = (float) $revenue;
+
+        // Xóa biến tạm của Laravel cho API gọn gàng
+        $store->makeHidden(['transactions_sum_line_total']);
+
+        return response()->json(['status' => 'success', 'data' => $store]);
+    }
+
     public function update(Request $request, $id)
     {
         $store = Store::find($id);
@@ -23,18 +160,18 @@ class StoreController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Không tìm thấy cửa hàng'], 404);
         }
 
-        // Validate
         $validator = Validator::make($request->all(), [
-            'Name' => 'string|max:255',
-            'City' => 'string|max:50',
-            'ZIPCode' => 'string|max:10'
+            'StoreName' => 'string|max:255',
+            'City'      => 'string|max:255',
+            'Country'   => 'string|max:255', 
+            'ZipCode'   => 'string|max:255',
+            'NumberOfEmployee' => 'integer|min:0'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
         }
 
-        // Cập nhật (chỉ cập nhật trường nào được gửi lên)
         $store->update($request->all());
 
         return response()->json([
@@ -45,25 +182,38 @@ class StoreController extends Controller
     }
 
     /**
-     * 2. Lấy danh sách nhân viên của 1 cửa hàng
+     * 4. Lấy danh sách nhân viên
      * GET /api/stores/{id}/employees
      */
     public function getEmployees($id)
     {
-        $store = Store::find($id);
+        // Tối ưu: Dùng with('employees') để load 1 lần thay vì Lazy Load
+        $store = Store::with('employees')->find($id);
 
         if (!$store) {
             return response()->json(['status' => 'error', 'message' => 'Không tìm thấy cửa hàng'], 404);
         }
 
-        // Dùng quan hệ hasMany đã khai báo trong Model Store
-        $employees = $store->employees;
+        return response()->json([
+            'status' => 'success',
+            'store_name' => $store->StoreName, 
+            'count' => $store->employees->count(),
+            'data' => $store->employees
+        ]);
+    }
+    
+    /**
+     * 5. Trả về danh sách cửa hàng thuần (dùng cho dropdown)
+     * GET /api/stores
+     */
+    public function listAll()
+    {
+        $stores = Store::select('StoreID', 'StoreName', 'City')->orderBy('StoreName', 'asc')->get();
 
         return response()->json([
             'status' => 'success',
-            'store_name' => $store->Name,
-            'count' => $employees->count(),
-            'data' => $employees
+            'data' => $stores
         ]);
     }
+    
 }

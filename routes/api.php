@@ -76,7 +76,16 @@ Route::prefix('chat')->group(function () {
 // ============================================================
 // PRODUCTS, STORES, DASHBOARD
 // ============================================================
+// API Routes - products, stores, employees
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+Route::get('/analytics/stores', [StoreController::class, 'index']); 
+// Minimal stores list used by frontend dropdowns
+Route::get('/stores', [StoreController::class, 'listAll']);
 Route::get('/products/categories', [ProductController::class, 'getCategories']);
+Route::get('/products/subcategories', [ProductController::class, 'getSubCategories']);
 Route::apiResource('products', ProductController::class);
 
 Route::get('/stores/{id}/metrics', [AnalyticsController::class, 'getStoreMetrics']);

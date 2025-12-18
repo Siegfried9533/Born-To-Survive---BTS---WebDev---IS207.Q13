@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('Color', 255)->nullable();
             $table->string('Size', 255)->nullable();
             $table->integer('ProductCost')->nullable();
-
             $table->timestamps();
         });
 
@@ -41,7 +40,6 @@ return new class extends Migration
             $table->string('Gender', 255)->nullable();
             $table->dateTime('DateOfBirth')->nullable();
             $table->string('JobTitle', 255)->nullable();
-
             $table->timestamps();
         });
 
@@ -123,7 +121,6 @@ return new class extends Migration
             $table->string('TransactionType', 255)->nullable();
             $table->string('PaymentMethod', 255)->nullable();
             $table->integer('InvoiceTotal')->nullable();
-
             $table->timestamps();
 
             // Thiết lập các khóa ngoại (Foreign Keys)

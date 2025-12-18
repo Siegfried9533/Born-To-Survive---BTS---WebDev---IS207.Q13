@@ -513,7 +513,14 @@ body {
   align-items: center;
   gap: 15px;
 }
-
+.date-range-picker input{
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dark);
+  background: transparent;
+}
 .date-icon-btn {
   background: transparent;
   border: none;

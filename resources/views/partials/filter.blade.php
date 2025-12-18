@@ -1,4 +1,4 @@
-<div class="filter-group" data-max="3">
+<div class="filter-group" data-max="3" id="store-filter-group">
     <label class="filter-label">
         <i class="fa-solid fa-store"></i> Stores:
     </label>
@@ -6,26 +6,6 @@
         <span class="filter-display-text">&nbsp;</span>
     </div>
     <div class="filter-dropdown">
-        <div class="filter-item">
-            <input type="checkbox" id="store1" value="Store 1">
-            <label for="store1">Store 1</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="store2" value="Store 2">
-            <label for="store2">Store 2</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="store3" value="Store 3">
-            <label for="store3">Store 3</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="store4" value="Store 4">
-            <label for="store4">Store 4</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="store5" value="Store 5">
-            <label for="store5">Store 5</label>
-        </div>
     </div>
 </div>
 

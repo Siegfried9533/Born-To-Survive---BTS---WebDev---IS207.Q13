@@ -4,13 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB; // <--- CÓ DÒNG NÀY CHƯA?
 
 class Store extends Model
 {
     use HasFactory;
 
-    // 1. Khai báo tên bảng (đề phòng Laravel tự suy diễn sai)
     protected $table = 'stores';
 
     // =========================================================
@@ -35,19 +33,17 @@ class Store extends Model
         'Longitude'
     ];
 
-    // =========================================================
-    // 4. KHAI BÁO MỐI QUAN HỆ (RELATIONSHIPS)
-    // =========================================================
-    
-    // Một Cửa hàng có nhiều Nhân viên
+    // Quan hệ: 1 Store có nhiều Transaction
+    public function transactions()
+    {
+        // tham số 2: Khóa ngoại bên bảng transactions
+        // tham số 3: Khóa chính bên bảng stores
+        return $this->hasMany(Transaction::class, 'StoreID', 'StoreID');
+    }
+
+    // Quan hệ: 1 Store có nhiều Employee
     public function employees()
     {
         return $this->hasMany(Employee::class, 'StoreID', 'StoreID');
-    }
-
-    // Một Cửa hàng có nhiều giao dịch
-    public function transactions()
-    {
-        return $this->hasMany(Transaction::class, 'StoreID', 'StoreID');
     }
 }
