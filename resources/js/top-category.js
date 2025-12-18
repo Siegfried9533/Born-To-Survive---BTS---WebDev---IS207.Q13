@@ -10,75 +10,82 @@ function initTopCategory() {
   // Lấy dữ liệu từ API categories
   const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
   const apiUrl = `${baseUrl}/api/products/categories`;
-  console.log("Lấy dữ liệu Top Category từ API:", apiUrl);
-  $.get(apiUrl, function (response) {
-    console.log("API categories response:", response);
-    const items = response && response.data ? response.data : (Array.isArray(response) ? response : []);
-    const $tbody = $("#topCategoryTable tbody");
-    $tbody.empty();
 
-    let data = [];
-    let totalDelta = 0,
+  const $tbody = $("#topCategoryTable tbody");
+
+  // Shared state
+  let data = [];
+  let totalDelta = 0,
+    totalInstore = 0;
+  let sortState = { col: "delta", asc: false };
+
+  // Ensure pagination container exists if needed (keep parity with other modules)
+
+  function fetchAndRender(params = {}) {
+    $tbody.empty();
+    $tbody.append('<tr><td colspan="5" class="text-center py-4">Loading...</td></tr>');
+
+    $.get(apiUrl, params, function (response) {
+      console.log("API categories response:", response);
+      const items = response && response.data ? response.data : (Array.isArray(response) ? response : []);
+      $tbody.empty();
+
+      data = [];
+      totalDelta = 0;
       totalInstore = 0;
 
-    items.forEach((it, idx) => {
-      // Support both object items (new API with delta_gmv/instore_gmv) and plain string array (backward compat)
-      let id, name, deltaNum, instoreNum, deltaDisplay, vnGrowth, instoreDisplay;
+      items.forEach((it, idx) => {
+        let id, name, deltaNum, instoreNum, deltaDisplay, vnGrowth, instoreDisplay;
 
-      console.log(`Category ${idx}:`, it); // Debug: in từng object
+        if (typeof it === 'string' || typeof it === 'number') {
+          id = String(it);
+          name = String(it);
+          deltaNum = 0;
+          instoreNum = 0;
+          deltaDisplay = '0 pts';
+          vnGrowth = '-';
+          instoreDisplay = '-';
+        } else if (typeof it === 'object' && it !== null) {
+          id = it.Category || it.CategoryID || it.id || it.code || it.name || '';
+          name = it.Category || it.CategoryName || it.Name || it.name || id;
+          deltaNum = Number(it.delta_gmv || it.delta || it.total_sold || it.change || 0) || 0;
+          instoreNum = Number(it.instore_gmv || it.instore || it.revenue || it.value || 0) || 0;
+          deltaDisplay = (deltaNum > 0 ? deltaNum.toLocaleString('en-US') : '0') + ' pts';
+          vnGrowth = it.product_count ? `${it.product_count} products` : (it.growth || '-');
+          instoreDisplay = (instoreNum > 0 ? instoreNum.toLocaleString('fr-FR') : '0') + ' €';
+        } else {
+          id = '';
+          name = '';
+          deltaNum = 0;
+          instoreNum = 0;
+          deltaDisplay = '0 pts';
+          vnGrowth = '-';
+          instoreDisplay = '-';
+        }
 
-      if (typeof it === 'string' || typeof it === 'number') {
-        // Simple string item -> use as name and id, no metrics available
-        id = String(it);
-        name = String(it);
-        deltaNum = 0;
-        instoreNum = 0;
-        deltaDisplay = '0 pts';
-        vnGrowth = '-';
-        instoreDisplay = '-';
-      } else if (typeof it === 'object' && it !== null) {
-        // New API returns: Category, product_count, delta_gmv, instore_gmv
-        id = it.Category || it.CategoryID || it.id || it.code || it.name || '';
-        name = it.Category || it.CategoryName || it.Name || it.name || id;
-        
-        // Map delta_gmv and instore_gmv from new API, fallback to old field names
-        deltaNum = Number(it.delta_gmv || it.delta || it.total_sold || it.change || 0) || 0;
-        instoreNum = Number(it.instore_gmv || it.instore || it.revenue || it.value || 0) || 0;
-        
-        console.log(`   id=${id}, name=${name}, delta_gmv=${deltaNum}, instore_gmv=${instoreNum}`);
-        
-        // Format display values
-        deltaDisplay = (deltaNum > 0 ? deltaNum.toLocaleString('en-US') : '0') + ' pts';
-        vnGrowth = it.product_count ? `${it.product_count} products` : (it.growth || '-');
-        instoreDisplay = (instoreNum > 0 ? instoreNum.toLocaleString('fr-FR') : '0') + ' €';
-      } else {
-        // Fallback
-        id = '';
-        name = '';
-        deltaNum = 0;
-        instoreNum = 0;
-        deltaDisplay = '0 pts';
-        vnGrowth = '-';
-        instoreDisplay = '-';
-      }
+        totalDelta += (deltaNum || 0);
+        totalInstore += (instoreNum || 0);
 
-      totalDelta += (deltaNum || 0);
-      totalInstore += (instoreNum || 0);
-
-      data.push({
-        rank: 0,
-        id: id,
-        name: name, // dùng chung cho Family / Model
-        deltaGMV: deltaDisplay,
-        vnGrowth: vnGrowth,
-        instore: instoreDisplay,
-        deltaNum: deltaNum,
-        instoreNum: instoreNum,
+        data.push({
+          rank: 0,
+          id: id,
+          name: name,
+          deltaGMV: deltaDisplay,
+          vnGrowth: vnGrowth,
+          instore: instoreDisplay,
+          deltaNum: deltaNum,
+          instoreNum: instoreNum,
+        });
       });
-    });
 
-    sortData("delta", false);
-    render();
+      sortData("delta", false);
+      render();
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      console.error('❌ Lỗi khi gọi API categories:', textStatus, errorThrown, jqXHR && jqXHR.responseText);
+      $tbody.html(
+        '<tr><td colspan="5" class="text-center text-danger py-5">Không tải được dữ liệu danh mục từ API</td></tr>'
+      );
+    });
 
     function sortData(col, asc) {
       data.sort((a, b) =>
@@ -174,12 +181,23 @@ function initTopCategory() {
         a.click();
         URL.revokeObjectURL(url);
       });
-  }).fail(function (jqXHR, textStatus, errorThrown) {
-    console.error('❌ Lỗi khi gọi API categories:', textStatus, errorThrown, jqXHR && jqXHR.responseText);
-    $("#topCategoryTable tbody").html(
-      '<tr><td colspan="5" class="text-center text-danger py-5">Không tải được dữ liệu danh mục từ API</td></tr>'
-    );
+  }
+
+  // Listen for global filters event and re-fetch
+  $(document).off('filters:applied.topCategory').on('filters:applied.topCategory', function (e, filters) {
+    const params = {};
+    if (filters) {
+      if (filters.categories && filters.categories.length) params.categories = filters.categories.join(',');
+      if (filters.stores && filters.stores.length) params.stores = filters.stores.join(',');
+      if (filters.from_date) params.from_date = filters.from_date;
+      if (filters.to_date) params.to_date = filters.to_date;
+      if (filters.sort) params.sort = filters.sort;
+    }
+    fetchAndRender(params);
   });
+
+  // Initial fetch
+  fetchAndRender();
 }
 
 // Gọi khi DOM sẵn sàng

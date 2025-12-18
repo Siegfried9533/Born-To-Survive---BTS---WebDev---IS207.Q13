@@ -35,6 +35,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/analytics/stores', [StoreController::class, 'index']); 
+// Minimal stores list used by frontend dropdowns
+Route::get('/stores', [StoreController::class, 'listAll']);
 Route::get('/products/categories', [ProductController::class, 'getCategories']);
 Route::apiResource('products', ProductController::class);
 

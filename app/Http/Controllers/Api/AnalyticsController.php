@@ -15,10 +15,37 @@ class AnalyticsController extends Controller
      */
   public function getProductAnalytics(Request $request)
 {
+    // Read filters from query params
+    $categoryParam = $request->query('category'); // CSV
+    $storesParam = $request->query('stores'); // CSV of StoreID
+    $fromDate = $request->query('from_date');
+    $toDate = $request->query('to_date');
+
     // 1. Khởi tạo Query Builder
-    // Join bảng transactions với products để lấy thông tin chi tiết sản phẩm
     $query = DB::table('transactions')
         ->join('products', 'transactions.ProductID', '=', 'products.ProductID');
+
+    // Apply filters
+    if ($categoryParam) {
+        $cats = array_values(array_filter(array_map('trim', explode(',', $categoryParam))));
+        if (!empty($cats)) {
+            $query->whereIn('products.Category', $cats);
+        }
+    }
+
+    if ($storesParam) {
+        $ids = array_values(array_filter(array_map('trim', explode(',', $storesParam))));
+        if (!empty($ids)) {
+            $query->whereIn('transactions.StoreID', $ids);
+        }
+    }
+
+    if ($fromDate) {
+        $query->whereDate('transactions.DATE', '>=', $fromDate);
+    }
+    if ($toDate) {
+        $query->whereDate('transactions.DATE', '<=', $toDate);
+    }
 
     // 2. Chọn cột và Tính toán (Select & Aggregate)
     $products = $query->select(
@@ -26,27 +53,28 @@ class AnalyticsController extends Controller
             'products.Description as ProductName',
             'products.Category',
             'products.SubCategory',
-            
             // Tổng số lượng bán
             DB::raw('COALESCE(SUM(transactions.Quantity), 0) as total_sold'),
-            
             // Tổng doanh thu
             DB::raw('COALESCE(SUM(transactions.LineTotal), 0) as revenue')
         )
-        // Group by tất cả các cột không nằm trong hàm tổng hợp (SUM)
         ->groupBy(
-            'products.ProductID', 
-            'products.Description', 
-            'products.Category', 
+            'products.ProductID',
+            'products.Description',
+            'products.Category',
             'products.SubCategory'
         )
-        // Sắp xếp theo doanh thu giảm dần
         ->orderByDesc('revenue')
         ->get();
 
-    // 3. Trả về kết quả JSON
     return response()->json([
         'status' => 'success',
+        'filters' => [
+            'category' => $categoryParam,
+            'stores' => $storesParam,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ],
         'data'   => $products
     ]);
 }

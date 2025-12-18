@@ -82,7 +82,7 @@ class ProductController extends Controller
      * 3. GET /api/products/categories
      * Lấy danh sách Category + Tổng doanh thu (delta_gmv)
      */
-    public function getCategories()
+    public function getCategories(Request $request)
     {
         try {
             // BƯỚC 1: Tạo bảng tạm tính tổng tiền cho TỪNG SẢN PHẨM trước
@@ -91,8 +91,24 @@ class ProductController extends Controller
                 ->select(
                     'ProductID',
                     \DB::raw('SUM(LineTotal) as total_revenue')
-                )
-                ->groupBy('ProductID');
+                );
+
+            // Apply optional filters to transactions aggregation (stores, date range)
+            // Query params: stores (csv of StoreID), from_date, to_date
+            if ($request->has('stores')) {
+                $ids = array_values(array_filter(array_map('trim', explode(',', $request->query('stores')))));
+                if (!empty($ids)) {
+                    $transStats->whereIn('StoreID', $ids);
+                }
+            }
+            if ($request->has('from_date')) {
+                $transStats->whereDate('DATE', '>=', $request->query('from_date'));
+            }
+            if ($request->has('to_date')) {
+                $transStats->whereDate('DATE', '<=', $request->query('to_date'));
+            }
+
+            $transStats = $transStats->groupBy('ProductID');
 
             // BƯỚC 2: Join bảng Products với bảng tạm ở trên để gom nhóm theo Category
             $categories = \DB::table('products')
@@ -112,8 +128,17 @@ class ProductController extends Controller
                 // Loại bỏ category rỗng
                 ->whereNotNull('products.Category')
                 ->where('products.Category', '!=', '')
-                
-                ->groupBy('products.Category')
+                // Optional: if client passes categories, filter the result to those categories
+                ;
+
+            if ($request->has('categories')) {
+                $cats = array_values(array_filter(array_map('trim', explode(',', $request->query('categories')))));
+                if (!empty($cats)) {
+                    $categories = $categories->whereIn('products.Category', $cats);
+                }
+            }
+
+            $categories = $categories->groupBy('products.Category')
                 ->orderByDesc('delta_gmv') // Sắp xếp doanh thu cao nhất lên đầu
                 ->get();
 
