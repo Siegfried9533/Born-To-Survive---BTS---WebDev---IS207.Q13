@@ -29,7 +29,7 @@
 
     <main class="main-content">
         <header id="app-header">
-            @yield('header', view('partials.header'))
+            @yield('header', view('partials.overview-header'))
         </header>
 
         <div id="page-content">

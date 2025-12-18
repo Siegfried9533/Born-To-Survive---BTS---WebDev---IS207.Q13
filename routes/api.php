@@ -41,6 +41,7 @@ Route::apiResource('products', ProductController::class);
 
 Route::get('/analytics/products', [AnalyticsController::class, 'getProductAnalytics']);
 Route::get('/stores/{id}/metrics', [AnalyticsController::class, 'getStoreMetrics']);
+Route::get('/analytics/stores', [AnalyticsController::class, 'getAllStores']);
 
 
 Route::get('/stores/{id}/employees', [StoreController::class, 'getEmployees']);
