@@ -17,8 +17,10 @@ Route::view('/customers/report-customers', 'customers.report-customers')->name('
 Route::view('/dashboard/overview', 'dashboard.overview')->name('dashboard.overview');
 Route::view('/dashboard/gauge', 'dashboard.gauge')->name('dashboard.gauge');
 Route::view('/dashboard/top-category', 'dashboard.top-category')->name('products.top-category');
+
 Route::view('/dashboard/top-products', 'dashboard.top-products')->name('products.top-products');
 Route::view('/dashboard/top-stores', 'dashboard.top-stores')->name('top-stores');
+Route::view('/dashboard/top-subcategory', 'dashboard.top-subcategory')->name('products.top-subcategory');
 //profile
 Route::view('/profile', 'profile.profile');
 //revenue

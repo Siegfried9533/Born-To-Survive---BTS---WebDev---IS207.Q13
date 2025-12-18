@@ -153,6 +153,8 @@ function initTopStores() {
     if (filters.categories && filters.categories.length) params.category = filters.categories.join(',');
     if (filters.stores && filters.stores.length) params.stores = filters.stores.join(',');
     if (filters.sort) params.sort = filters.sort;
+    if (filters.from_date) params.from_date = filters.from_date;
+    if (filters.to_date) params.to_date = filters.to_date;
     fetchAndRender(params);
   });
 

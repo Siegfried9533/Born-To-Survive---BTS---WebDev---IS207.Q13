@@ -130,7 +130,8 @@ function initFilterComponent() {
   function generateStores() {
     const $storeDropdown = $("#store-filter-group .filter-dropdown");
     if (!$storeDropdown.length) return;
-    const apiUrl = "/api/stores";
+      const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
+    const apiUrl = `${baseUrl}/api/stores`;
 
     const $header = $storeDropdown.find(".filter-dropdown-header");
     const $loading = $("<div class='filter-loading text-muted'>Loading stores...</div>");
@@ -250,34 +251,41 @@ function initFilterComponent() {
   );
 
   // --- Apply filters: Thu thập lựa chọn và kích hoạt filter ---
-  $("#filter-container").on("click", ".btn-apply-filters", function (e) {
-    e.preventDefault();
-
-    // Lấy categories đã chọn
+  function collectFilters() {
     const categories = $("#category-filter-group input:checked")
       .map(function () {
         return $(this).val();
       })
       .get();
 
-    // Lấy stores đã chọn (giá trị hiện tại là StoreID)
     const stores = $("#store-filter-group input:checked")
       .map(function () {
         return $(this).val();
       })
       .get();
 
-    // Lấy tùy chọn sort
     const sort = $("input[name='sort']:checked").val() || null;
 
-    const filters = {
+    const from_date = $("#startDate").length ? $("#startDate").val() : null;
+    const to_date = $("#endDate").length ? $("#endDate").val() : null;
+
+    return {
       categories: categories,
       stores: stores,
       sort: sort,
+      from_date: from_date || null,
+      to_date: to_date || null,
     };
+  }
 
-    // Phát 1 sự kiện để mỗi trang/Module tự bắt và gọi API riêng
-    $(document).trigger("filters:applied", [filters]);
+  $("#filter-container").on("click", ".btn-apply-filters", function (e) {
+    e.preventDefault();
+    $(document).trigger("filters:applied", [collectFilters()]);
+  });
+
+  // Auto-apply when date inputs change (no need to click Apply)
+  $(document).on('change', '#startDate, #endDate', function () {
+    $(document).trigger('filters:applied', [collectFilters()]);
   });
 
   // --- 4. Đóng dropdown khi click ra ngoài ---

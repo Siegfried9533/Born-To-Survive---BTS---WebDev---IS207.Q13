@@ -33,6 +33,73 @@ class ProductController extends Controller
             'data' => $query->orderByDesc('created_at')->paginate(10)
         ]);
     }
+    
+    /**
+     * 3b. GET /api/products/subcategories
+     * Lấy danh sách SubCategory + Tổng doanh thu (delta_gmv)
+     * Hành vi giống getCategories nhưng nhóm theo SubCategory
+     */
+    public function getSubCategories(Request $request)
+    {
+        try {
+            // Tạo bảng tạm tổng doanh thu theo ProductID (có thể lọc theo cửa hàng và ngày)
+            $transStats = \DB::table('transactions')
+                ->select(
+                    'ProductID',
+                    \DB::raw('SUM(LineTotal) as total_revenue')
+                );
+
+            if ($request->has('stores')) {
+                $ids = array_values(array_filter(array_map('trim', explode(',', $request->query('stores')))));
+                if (!empty($ids)) {
+                    $transStats->whereIn('StoreID', $ids);
+                }
+            }
+            if ($request->has('from_date')) {
+                $transStats->whereDate('DATE', '>=', $request->query('from_date'));
+            }
+            if ($request->has('to_date')) {
+                $transStats->whereDate('DATE', '<=', $request->query('to_date'));
+            }
+
+            $transStats = $transStats->groupBy('ProductID');
+
+            // Join products với bảng tạm và gom nhóm theo SubCategory
+            $subs = \DB::table('products')
+                ->leftJoinSub($transStats, 'stats', function ($join) {
+                    $join->on('products.ProductID', '=', 'stats.ProductID');
+                })
+                ->select(
+                    'products.SubCategory',
+                    \DB::raw('COUNT(products.ProductID) as product_count'),
+                    \DB::raw('COALESCE(SUM(stats.total_revenue), 0) as delta_gmv')
+                )
+                ->whereNotNull('products.SubCategory')
+                ->where('products.SubCategory', '!=', '')
+            ;
+
+            // Optional: allow filtering by parent categories
+            if ($request->has('categories')) {
+                $cats = array_values(array_filter(array_map('trim', explode(',', $request->query('categories')))));
+                if (!empty($cats)) {
+                    $subs = $subs->whereIn('products.Category', $cats);
+                }
+            }
+
+            $subs = $subs->groupBy('products.SubCategory')
+                         ->orderByDesc('delta_gmv')
+                         ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $subs
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getSubCategories:', ['error' => $e->getMessage()]);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
 
     /**
      * 2. POST /api/products
@@ -152,7 +219,7 @@ class ProductController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
-
+    
     /**
      * 4. GET /api/products/{id}
      * Xem chi tiết 1 sản phẩm
