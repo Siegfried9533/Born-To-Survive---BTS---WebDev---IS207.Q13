@@ -16,22 +16,21 @@ class Store extends Model
     // =========================================================
     // 2. CẤU HÌNH KHÓA CHÍNH (QUAN TRỌNG NHẤT)
     // =========================================================
-    // Vì khóa chính là 'StoreID' (VD: "S001") chứ không phải 'id'
+    // Khóa chính là StoreID (int, không tự tăng)
     protected $primaryKey = 'StoreID';
-
-    // Vì khóa chính là Chuỗi (String), không phải số tự tăng (Auto-increment)
     public $incrementing = false;
-    protected $keyType = 'string';
+    protected $keyType = 'int';
 
     // =========================================================
     // 3. KHAI BÁO CÁC CỘT ĐƯỢC PHÉP CHỈNH SỬA (Mass Assignment)
     // =========================================================
     protected $fillable = [
         'StoreID',
-        'Name',
-        'City',
         'Country',
-        'ZIPCode',
+        'City',
+        'StoreName',
+        'NumberOfEmployee',
+        'ZipCode',
         'Latitude',
         'Longitude'
     ];
@@ -46,9 +45,9 @@ class Store extends Model
         return $this->hasMany(Employee::class, 'StoreID', 'StoreID');
     }
 
-    // Một Cửa hàng có nhiều Hóa đơn
-    public function invoices()
+    // Một Cửa hàng có nhiều giao dịch
+    public function transactions()
     {
-        return $this->hasMany(Invoices::class, 'StoreID', 'StoreID');
+        return $this->hasMany(Transaction::class, 'StoreID', 'StoreID');
     }
 }

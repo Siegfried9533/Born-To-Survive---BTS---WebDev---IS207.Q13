@@ -12,9 +12,14 @@ class Employee extends Model
     protected $table = 'employees';
 
     // Cấu hình khóa chính (Quan trọng)
-    protected $primaryKey = 'EmpID';
+    protected $primaryKey = 'EmployeeID';
     public $incrementing = false;
-    protected $keyType = 'string';
+    protected $keyType = 'int';
 
-    protected $fillable = ['EmpID', 'Name', 'Position', 'StoreID'];
+    protected $fillable = ['EmployeeID', 'StoreID', 'Name', 'Position'];
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'StoreID', 'StoreID');
+    }
 }
