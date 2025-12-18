@@ -24,7 +24,7 @@
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end mt-2 shadow-sm">
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="../pages/profile.html">
+                        <a class="dropdown-item d-flex align-items-center" href="/profile">
                             <i class="fa-solid fa-user me-2"></i>
                             <span>My Profile</span>
                         </a>
@@ -33,7 +33,7 @@
                         <hr class="dropdown-divider">
                     </li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center text-danger" href="#">
+                        <a class="dropdown-item d-flex align-items-center text-danger" href="#" id="btnLogout">
                             <i class="fa-solid fa-arrow-right-from-bracket me-2"></i>
                             <span>Log Out</span>
                         </a>

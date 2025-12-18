@@ -20,6 +20,12 @@
             baseUrl: "{{ url('/') }}"
         };
     </script>
+    
+    {{-- Load App Core for auth --}}
+    <script src="/frontend/js/app-core.js"></script>
+    
+    {{-- Auth Check --}}
+    @include('partials.auth-check')
 </head>
 
 <body>

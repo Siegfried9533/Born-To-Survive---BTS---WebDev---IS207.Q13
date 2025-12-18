@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Sign Up - Modalab</title>
+    <title>Forgot Password - Modalab</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="shortcut icon" href="/assets/images/Favicon.png" type="image/x-icon" />
     <link rel="stylesheet" href="/frontend/css/style.css" />
@@ -38,37 +38,24 @@
         <div class="signin-container d-flex flex-column flex-md-row vh-100">
             <div class="left justify-content-center align-items-center w-100 w-md-50">
                 <div class="form-wrapper">
-                    <h2 class="title-main mb-2">Create Account</h2>
-                    <p class="mb-4">Sign up to get started</p>
+                    <h2 class="title-main mb-2">Forgot Password?</h2>
+                    <p class="mb-4">Enter your email to receive reset instructions</p>
 
-                    <form id="signupForm">
-                        <div class="mb-3">
-                            <label class="form-label fs-small">Username</label>
-                            <input type="text" id="signupUsername" class="form-control" placeholder="Your username" />
-                        </div>
-
+                    <form id="forgotPasswordForm">
                         <div class="mb-3">
                             <label class="form-label fs-small">Email</label>
-                            <input type="email" id="signupEmail" class="form-control" placeholder="Your email address" />
+                            <input type="email" id="emailInput" class="form-control" placeholder="Your email address" />
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fs-small">Password</label>
-                            <input type="password" id="signupPassword" class="form-control" placeholder="Your password" />
-                        </div>
-
-                        <div id="signupError" class="text-danger fs-small mb-2"></div>
-
-                        <button type="submit" class="btn btn-primary fw-bold w-100 mb-3">
-                            SIGN UP
+                        <button type="submit" id="continueBtn" class="btn btn-primary fw-bold w-100 mb-3">
+                            Continue
                         </button>
                     </form>
 
                     <div class="text-center">
-                        <span class="fs-small">
-                            Already have an account?
-                            <a href="{{ route('auth.login') }}" class="link-page fw-medium text-decoration-none">Sign in</a>
-                        </span>
+                        <a href="{{ route('auth.login') }}" class="link-page text-decoration-none fs-small">
+                            Back to Sign In
+                        </a>
                     </div>
                 </div>
             </div>
@@ -94,6 +81,6 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="/frontend/js/app-core.js"></script>
     <script src="/frontend/js/main.js"></script>
-    <!-- TODO: Add sign-up.js if needed -->
+    <script src="/frontend/js/forgot-reset.js"></script>
 </body>
 </html>

@@ -1,4 +1,23 @@
 // =======================================================
+// HELPER CONSTANTS & FUNCTIONS
+// =======================================================
+
+const ERROR_CLASS = "error-message";
+
+function displayError($input, message) {
+    $input.next(`.${ERROR_CLASS}`).remove();
+    $input.after(`<div class="${ERROR_CLASS} text-danger mt-1">${message}</div>`);
+}
+
+function clearAllErrors() {
+    $(`.${ERROR_CLASS}`).remove();
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// =======================================================
 // FORGOT_PWD
 // =======================================================
 
@@ -7,7 +26,10 @@ $(document).ready(function () {
     const $forgotPasswordForm = $("#forgotPasswordForm");
     const $continueBtn = $("#continueBtn");
 
-    // HÀM MỚI: gọi backend thay vì mock
+    // Nếu không có form forgot-password thì bỏ qua
+    if (!$forgotPasswordForm.length) return;
+
+    // Gọi backend để gửi email reset
     async function handleEmailCheck(e) {
         e.preventDefault();
 
@@ -24,15 +46,17 @@ $(document).ready(function () {
             return;
         }
 
+        $continueBtn.prop("disabled", true).text("Sending...");
+
         try {
             // Gọi API backend
             const res = await App.apiPost("/auth/forgot-password", { email });
 
             alert("A password reset request has been created. Redirecting...");
 
-            // Lấy token + email từ response, chuyển sang reset-pwd.html
-            const token = res.token;
-            const redirectUrl = `reset-pwd.html?email=${encodeURIComponent(
+            // Lấy token + email từ response (PasswordResetController trả token trong DEV)
+            const token = res.token || res.debug_token || "";
+            const redirectUrl = `/reset-password?email=${encodeURIComponent(
                 email
             )}&token=${encodeURIComponent(token)}`;
 
@@ -44,6 +68,7 @@ $(document).ready(function () {
                 err.message ||
                     "This email address is not registered in our system."
             );
+            $continueBtn.prop("disabled", false).text("Continue");
         }
     }
 
@@ -59,12 +84,16 @@ $(document).ready(function () {
 // RESET_PWD
 // =======================================================
 $(document).ready(function () {
+    const $resetPasswordForm = $("#resetPasswordForm");
+    
+    // Nếu không có form reset-password thì bỏ qua
+    if (!$resetPasswordForm.length) return;
+
     // Lấy email & token từ query string (reset-pwd.html?email=...&token=...)
     const params = new URLSearchParams(window.location.search);
     const resetEmail = params.get("email");
     const resetToken = params.get("token");
 
-    // Nếu có token/email trong query thì đây là flow token-based (public reset)
     // Nếu user đã đăng nhập (App.getToken()) thì dùng flow authenticated change-password
     const isAuthenticated =
         typeof App !== "undefined" &&
@@ -75,8 +104,8 @@ $(document).ready(function () {
         // token-based reset requires email & token
         if (!resetEmail || !resetToken) {
             alert("Invalid reset link. Please request password reset again.");
-            // Option: quay về forgot password
-            // window.location.href = 'forgot-pwd.html';
+            window.location.href = "/forgot-password";
+            return;
         }
     } else {
         // show current-password input for authenticated change
@@ -101,14 +130,13 @@ $(document).ready(function () {
 
     const $newPasswordInput = $("#newPasswordInput");
     const $confirmPasswordInput = $("#confirmPasswordInput");
-    const $resetPasswordForm = $("#resetPasswordForm");
     const $resetBtn = $("#resetBtn");
 
     const $strengthBar = $("#strengthBar");
     const $strengthText = $("#strengthText");
     const $passwordRequirements = $("#passwordRequirements");
 
-    // Kiểm tra độ mạnh của mật khẩu (giữ nguyên)
+    // Kiểm tra độ mạnh của mật khẩu
     function checkPasswordStrength(password) {
         $newPasswordInput.next(`.${ERROR_CLASS}`).remove();
 
@@ -119,54 +147,63 @@ $(document).ready(function () {
             return { valid: false, message: "Password is required" };
         }
 
-        const result = zxcvbn(password);
-        const score = result.score;
-        const scoreTexts = [
-            "Too Weak",
-            "Weak",
-            "Fair",
-            "Strong",
-            "Very Strong",
-        ];
+        // Nếu có zxcvbn
+        if (typeof zxcvbn === "function") {
+            const result = zxcvbn(password);
+            const score = result.score;
+            const scoreTexts = [
+                "Too Weak",
+                "Weak",
+                "Fair",
+                "Strong",
+                "Very Strong",
+            ];
 
-        $strengthBar.removeClass().addClass(`strength-bar strength-${score}`);
+            $strengthBar.removeClass().addClass(`strength-bar strength-${score}`);
 
-        $strengthText
-            .text(`Strength: ${scoreTexts[score]}`)
-            .removeClass("strength-success strength-fail");
-
-        $passwordRequirements.empty();
-
-        if (score >= 1) {
             $strengthText
-                .addClass("strength-success")
-                .text(`Strength: ${scoreTexts[score]}`);
+                .text(`Strength: ${scoreTexts[score]}`)
+                .removeClass("strength-success strength-fail");
 
-            const $li = $("<li>")
-                .text("Password meets the minimum strength requirements")
-                .addClass("strength-success");
-            $passwordRequirements.append($li);
+            $passwordRequirements.empty();
 
-            return { valid: true, message: "" };
-        } else {
-            $strengthText.addClass("strength-fail");
+            if (score >= 1) {
+                $strengthText
+                    .addClass("strength-success")
+                    .text(`Strength: ${scoreTexts[score]}`);
 
-            const suggestions = result.feedback.suggestions;
+                const $li = $("<li>")
+                    .text("Password meets the minimum strength requirements")
+                    .addClass("strength-success");
+                $passwordRequirements.append($li);
 
-            if (suggestions && suggestions.length > 0) {
-                suggestions.forEach((suggestion) => {
-                    if (suggestion.trim() !== "") {
-                        const $li = $("<li>")
-                            .text(suggestion)
-                            .addClass("strength-fail");
-                        $passwordRequirements.append($li);
-                    }
-                });
+                return { valid: true, message: "" };
+            } else {
+                $strengthText.addClass("strength-fail");
+
+                const suggestions = result.feedback.suggestions;
+
+                if (suggestions && suggestions.length > 0) {
+                    suggestions.forEach((suggestion) => {
+                        if (suggestion.trim() !== "") {
+                            const $li = $("<li>")
+                                .text(suggestion)
+                                .addClass("strength-fail");
+                            $passwordRequirements.append($li);
+                        }
+                    });
+                }
+                return {
+                    valid: false,
+                    message: "Password must be at least Weak (score ≥ 1).",
+                };
             }
-            return {
-                valid: false,
-                message: "Password must be at least Weak (score ≥ 1).",
-            };
+        } else {
+            // Fallback: kiểm tra đơn giản nếu không có zxcvbn
+            if (password.length >= 6) {
+                return { valid: true, message: "" };
+            }
+            return { valid: false, message: "Password must be at least 6 characters" };
         }
     }
 
@@ -205,38 +242,28 @@ $(document).ready(function () {
             return;
         }
 
+        $resetBtn.prop("disabled", true).text("Processing...");
+
         try {
-            // Debug log: show which endpoint we will call and payload
             if (isAuthenticated) {
-                console.debug(
-                    "Calling API PUT",
-                    App.config.apiBaseUrl + "/profile/password",
-                    { old_pass: oldPwd, new_pass: newPwd }
-                );
-            } else {
-                console.debug(
-                    "Calling API POST",
-                    App.config.apiBaseUrl + "/auth/reset-password",
-                    { email: resetEmail, token: resetToken, password: newPwd }
-                );
-            }
-            if (isAuthenticated) {
-                // Authenticated user: call profile password change
+                // Authenticated user: call change-password endpoint
                 if (!oldPwd) {
                     displayError(
                         $("#oldPasswordInput"),
                         "Please enter your current password"
                     );
+                    $resetBtn.prop("disabled", false).text("Reset Password");
                     return;
                 }
 
-                await App.apiPut("/profile/password", {
-                    old_pass: oldPwd,
-                    new_pass: newPwd,
+                await App.apiPost("/auth/change-password", {
+                    current_password: oldPwd,
+                    new_password: newPwd,
+                    new_password_confirmation: confirmPwd,
                 });
 
                 alert("Password updated successfully. Redirecting to Profile");
-                window.location.href = "./profile.html";
+                window.location.href = "/profile";
             } else {
                 // Token-based reset (public)
                 await App.apiPost("/auth/reset-password", {
@@ -247,11 +274,12 @@ $(document).ready(function () {
                 });
 
                 alert("Password successfully reset! Redirecting to Sign In");
-                window.location.href = "../index.html";
+                window.location.href = "/login";
             }
         } catch (err) {
             console.error(err);
             alert(err.message || "Reset password failed");
+            $resetBtn.prop("disabled", false).text("Reset Password");
         }
     }
 
