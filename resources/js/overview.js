@@ -12,7 +12,7 @@ let salesChartInstance = null;
 /* ======================================================= */
 /* OVERVIEW: GỌI API /api/dashboard/overview → VẼ BIỂU ĐỒ */
 /* ======================================================= */
-async function initOverviewChartsFromApi() {
+async function initOverviewChartsFromApi(filterParams = {}) {
     // Chỉ chạy nếu đang ở trang có biểu đồ này
     const canvas = document.getElementById("gmvEvolutionChart");
     if (!canvas) {
@@ -22,9 +22,33 @@ async function initOverviewChartsFromApi() {
 
     console.log("🚀 Calling API: /api/dashboard/overview");
 
+    //test
+    try {
+        const response = await fetchDashboardOverview(filterParams);
+        const data = response.data;
+
+        console.log("1. Data đã về tới JS");
+
+        if (data.Modalab_Synthesis) {
+            console.log("2. Bắt đầu vẽ Modalab...");
+            renderModalabSynthesis(data.Modalab_Synthesis);
+        }
+
+        if (data.Sales_Channels) {
+            console.log("3. Bắt đầu vẽ Sales Channels...");
+            renderSalesChannels(data.Sales_Channels);
+        }
+        
+        console.log("4. Kết thúc quá trình vẽ");
+
+    } catch (error) {
+        console.error("❌ Lỗi cụ thể:", error);
+    }
+    //
+
     try {
         // Dùng axios thay vì jQuery để đảm bảo ổn định
-        const response = await fetchDashboardOverview();
+        const response = await fetchDashboardOverview(filterParams);
         const data = response.data;
 
         if (!data) {
@@ -54,6 +78,10 @@ async function initOverviewChartsFromApi() {
             renderSalesChannels(data.Sales_Channels);
         } else {
             console.warn("⚠️ Thiếu dữ liệu: Sales_Channels");
+        }
+
+        if ($('#total-revenue').length) {
+            $('#total-revenue').text(`€${data.total_revenue.toLocaleString()}`);
         }
 
     } catch (error) {
@@ -257,7 +285,20 @@ function renderSalesChannels(data) {
 Chart.defaults.font.family = "'Inter', 'Helvetica', 'Arial', sans-serif";
 Chart.defaults.color = "#495057";
 
-/* GỌI KHI LOAD TRANG */
+// 2. Lắng nghe sự kiện từ bộ lọc (Nút Apply)
+$(document).on('click', '#apply-filter-btn', function (e) {
+    e.preventDefault();
+    
+    // Lấy giá trị từ các ô Input trong file filter.blade.php
+    // Đảm bảo các ô này có ID tương ứng là #date-from và #date-to
+    const from = $('#date-from').val(); 
+    const to = $('#date-to').val();
+
+    // Gọi lại hàm để fetch dữ liệu mới
+    initOverviewChartsFromApi({ from, to });
+});
+
+// 3. Khởi chạy lần đầu (không có param -> hiện toàn bộ thời gian)
 $(document).ready(function () {
     initOverviewChartsFromApi();
 });

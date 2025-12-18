@@ -21,22 +21,30 @@ class SalesController extends Controller
         $salesData = DB::table('transactions')
             ->select(
                 // Gom nhóm theo ngày (Bỏ giờ phút)
-                DB::raw('DATE(transactions.DATE) as date'), 
-                
+                DB::raw('DATE(transactions.DATE) as date'),
+
                 // Tính tổng doanh thu: SUM( (SL * Giá) - Giảm giá )
                 DB::raw('SUM(CASE WHEN transactions.LineTotal IS NOT NULL THEN transactions.LineTotal ELSE (transactions.Quantity * transactions.UnitPrice) END) as revenue'),
-                
+
                 // Đếm tổng số đơn hàng trong ngày
                 DB::raw('COUNT(DISTINCT transactions.InvoiceID) as total_orders')
             )
-            
+
             // Lọc theo khoảng thời gian
             ->whereBetween('transactions.DATE', [$fromDate . ' 00:00:00', $toDate . ' 23:59:59'])
-            
+
             // Gom nhóm và Sắp xếp
             ->groupBy('date')
             ->orderBy('date', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                // ✅ Cast sang số để JavaScript không cần parse
+                return [
+                    'date' => $item->date,
+                    'revenue' => (float) $item->revenue,
+                    'total_orders' => (int) $item->total_orders
+                ];
+            });
 
         // Để hiển thị con số to đùng trên góc biểu đồ
         $totalRevenue = $salesData->sum('revenue');

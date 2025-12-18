@@ -9,38 +9,48 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Biểu thức tính giá trị dòng giao dịch (dùng chung cho mọi thống kê)
-        $amountExpr = DB::raw('COALESCE(transactions.LineTotal, transactions.Quantity * transactions.UnitPrice)');
+        // Lấy ngày từ request, nếu không truyền sẽ là null
+        $fromDate = $request->query('from');
+        $toDate   = $request->query('to');
 
-        // 1. TÍNH TỔNG DOANH THU (Total Revenue) THÁNG HIỆN TẠI
-        // Logic: Tổng (Số lượng * Đơn giá) - Giảm giá
-        $totalRevenue = DB::table('transactions')
-            ->whereMonth('transactions.DATE', Carbon::now()->month)
-            ->whereYear('transactions.DATE', Carbon::now()->year)
-            ->sum($amountExpr);
+        $amountExprSql = 'COALESCE(transactions.LineTotal, transactions.Quantity * transactions.UnitPrice)';
+
+        // Tạo một Query Builder gốc cho bảng transactions
+        $baseQuery = DB::table('transactions')
+            // Logic: CHỈ lọc nếu có $fromDate và $toDate
+            ->when($fromDate && $toDate, function ($query) use ($fromDate, $toDate) {
+                return $query->whereBetween('DATE', [$fromDate, $toDate]);
+            });
+        // 1. TỔNG DOANH THU
+        $totalRevenue = (clone $baseQuery) // Dùng clone để không làm hỏng query gốc
+            ->selectRaw("SUM($amountExprSql) as total")
+            ->value('total') ?? 0;
 
         // 2. ĐƠN HÀNG MỚI (New Orders)
         // Logic: Đếm số lượng đơn (InvoiceID) được tạo trong ngày hôm nay
-        $newOrders = DB::table('transactions')
-            ->whereDate('DATE', Carbon::today())
+        $newOrders = (clone $baseQuery)
             ->distinct('InvoiceID')
             ->count('InvoiceID');
 
         // 3. SẢN PHẨM BÁN CHẠY (Top Products)
         // Logic: Join transactions -> products. Group by Tên sản phẩm và sắp xếp theo tổng số lượng bán.
-        $topProducts = DB::table('transactions')
+        $topProducts = (clone $baseQuery)
             ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
             ->select(
                 'products.ProductID as product_id',
-                DB::raw('SUM(transactions.Quantity) as total_sold'),
-                DB::raw("SUM($amountExpr) as revenue_generated")
+                DB::raw('CAST(SUM(transactions.Quantity) AS UNSIGNED) as total_sold'),
+                DB::raw("CAST(SUM($amountExprSql) AS DECIMAL(15,2)) as revenue_generated")
             )
             ->groupBy('products.ProductID')
             ->orderByDesc('total_sold')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $item->revenue_generated = (float) $item->revenue_generated;
+                return $item;
+            });
 
         // 4. CẢNH BÁO (Alerts)
         $alerts = [];
@@ -63,7 +73,7 @@ class DashboardController extends Controller
         // Cần subquery để tính tổng giá trị từng đơn hàng
         $highValueTrans = DB::table('transactions')
             ->whereDate('transactions.DATE', Carbon::today())
-            ->select('transactions.InvoiceID', DB::raw("SUM($amountExpr) as total_val"))
+            ->select('transactions.InvoiceID', DB::raw("SUM($amountExprSql) as total_val"))
             ->groupBy('transactions.InvoiceID')
             ->having('total_val', '>', 10000000) // Ngưỡng ví dụ: 10 triệu
             ->count();
@@ -75,43 +85,54 @@ class DashboardController extends Controller
             ];
         }
 
-        // 5. GMV EVOLUTION – TỔNG GMV 12 THÁNG GẦN NHẤT
-        $startMonth = Carbon::now()->subMonths(11)->startOfMonth();
-        $endMonth   = Carbon::now()->endOfMonth();
+        // 5. GMV EVOLUTION – Linh hoạt theo bộ lọc
+        // Lấy ngày bắt đầu và kết thúc thực tế từ request hoặc mặc định 12 tháng
+        $gmvStart = $fromDate ?: Carbon::now()->subMonths(11)->startOfMonth()->toDateString();
+        $gmvEnd   = $toDate ?: Carbon::now()->endOfMonth()->toDateString();
 
         $gmvByMonth = DB::table('transactions')
-            ->whereBetween('transactions.DATE', [$startMonth, $endMonth])
-            ->selectRaw('DATE_FORMAT(transactions.DATE, "%Y-%m") as ym')
-            ->selectRaw("SUM($amountExpr) as gmv")
+            ->whereBetween('DATE', [$gmvStart, $gmvEnd]) // Khớp với bộ lọc
+            ->selectRaw('DATE_FORMAT(DATE, "%Y-%m") as ym')
+            ->selectRaw("SUM($amountExprSql) as gmv")
             ->groupBy('ym')
             ->orderBy('ym')
-            ->pluck('gmv', 'ym'); // [ '2025-01' => 12345, ... ]
+            ->pluck('gmv', 'ym');
+
+        // Tạo cursor chạy từ gmvStart đến gmvEnd để đảm bảo không mất tháng nào
+        $startDateObj = Carbon::parse($gmvStart)->startOfMonth();
+        $endDateObj   = Carbon::parse($gmvEnd)->endOfMonth();
+        $diffInMonths = $startDateObj->diffInMonths($endDateObj) + 1;
+
+        // Giới hạn để tránh treo trình duyệt nếu dữ liệu quá nhiều năm
+        if ($diffInMonths > 24 && !$fromDate) {
+            $startDateObj = Carbon::now()->subMonths(11)->startOfMonth();
+            $diffInMonths = 12;
+        }
 
         $gmvLabels = [];
         $gmvValues = [];
         $gmvGrowth = [];
+        $cursor = $startDateObj->copy();
+        $prevGmv = null;
 
-        $cursor    = $startMonth->copy();
-        $prevGmv   = null;
-
-        for ($i = 0; $i < 12; $i++) {
+        for ($i = 0; $i < $diffInMonths; $i++) {
             $ymKey = $cursor->format('Y-m');
-            $label = $cursor->format('F'); // Ví dụ: January, February...
-
             $currentGmv = (float) ($gmvByMonth[$ymKey] ?? 0);
 
-            $gmvLabels[] = $label;
+            $gmvLabels[] = $cursor->format('M Y'); // Ví dụ: Dec 2025
             $gmvValues[] = $currentGmv;
 
-            if ($prevGmv !== null && $prevGmv > 0) {
-                $growth = (($currentGmv - $prevGmv) / $prevGmv) * 100;
-            } else {
+            // Tính growth %
+            if ($prevGmv === null) {
                 $growth = 0;
+            } elseif ($prevGmv == 0) {
+                $growth = ($currentGmv > 0) ? 100 : 0;
+            } else {
+                $growth = (($currentGmv - $prevGmv) / $prevGmv) * 100;
             }
 
             $gmvGrowth[] = round($growth, 1);
             $prevGmv = $currentGmv;
-
             $cursor->addMonth();
         }
 
@@ -122,11 +143,11 @@ class DashboardController extends Controller
         ];
 
         // 6. MODALAB SYNTHESIS – TOP 6 CATEGORY THEO DOANH THU (%)
-        $categoryData = DB::table('transactions')
+        $categoryData = (clone $baseQuery)
             ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
             ->select(
                 'products.Category as category',
-                DB::raw("SUM($amountExpr) as revenue")
+                DB::raw("SUM($amountExprSql) as revenue")
             )
             ->groupBy('products.Category')
             ->orderByDesc('revenue')
@@ -156,7 +177,7 @@ class DashboardController extends Controller
         ];
 
         // 7. SALES CHANNELS – PHÂN BỔ THEO PHƯƠNG THỨC THANH TOÁN (%)
-        $channels = DB::table('transactions')
+        $channels = (clone $baseQuery)
             ->select('PaymentMethod', DB::raw('COUNT(*) as total'))
             ->groupBy('PaymentMethod')
             ->get();

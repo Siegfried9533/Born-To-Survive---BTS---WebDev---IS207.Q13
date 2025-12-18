@@ -15,7 +15,10 @@ export default defineConfig({
                 'resources/js/top-products.js',
                 'resources/js/top-stores.js',
                 'resources/js/filter-component.js',
-                'resources/js/overview.js'
+                'resources/js/overview.js',
+                'resources/js/customers.js',
+                'resources/js/report-revenues.js',
+                'resources/js/chatbox.js'
             ],
             refresh: true,
         }),

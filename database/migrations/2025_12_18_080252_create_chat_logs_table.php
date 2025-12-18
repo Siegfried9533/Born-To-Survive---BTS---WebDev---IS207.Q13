@@ -13,10 +13,6 @@ return new class extends Migration
     {
         Schema::create('chat_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users');
-            $table->text('question');
-            $table->text('bot_response');
-            $table->text('recommendation')->nullable();
             $table->timestamps();
         });
     }

@@ -12,10 +12,9 @@ class Discount extends Model
     protected $table = 'discounts';
 
     protected $primaryKey = 'DiscountID';
-    public $incrementing = false;
+    public $incrementing = true; // FIXED: DiscountID is auto-increment in migration
     protected $keyType = 'int';
     protected $fillable = [
-        'DiscountID',
         'Discount',
         'Start',
         'End',
@@ -29,4 +28,10 @@ class Discount extends Model
         'Start' => 'datetime',
         'End' => 'datetime',
     ];
+
+    // Relationship: Một Discount có nhiều Transactions
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'DiscountID', 'DiscountID');
+    }
 }

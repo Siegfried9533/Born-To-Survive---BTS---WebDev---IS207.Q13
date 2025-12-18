@@ -34,8 +34,9 @@ export const fetchSalesAnalytics = (from, to) => {
 };
 
 // --- NHÓM DASHBOARD ---
-export const fetchDashboardOverview = () => {
-    return apiClient.get(`/dashboard/overview`);
+// resources/js/api.js
+export const fetchDashboardOverview = (params = {}) => {
+    return apiClient.get(`/dashboard/overview`, { params });
 };
 
 //NHÓM XUẤT BÁO CÁO

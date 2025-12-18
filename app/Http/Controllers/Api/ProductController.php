@@ -7,6 +7,8 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
 
 class ProductController extends Controller
 {
@@ -19,7 +21,7 @@ class ProductController extends Controller
     {
         // Khởi tạo query
         $query = Product::query();
-        
+
         // Tính năng lọc theo Danh mục (nếu có gửi lên ?category=Ao)
         if ($request->has('category')) {
             $query->where('Category', $request->category);
@@ -90,11 +92,26 @@ class ProductController extends Controller
                 )
                 ->groupBy('products.Category')
                 ->orderByDesc('delta_gmv')
-                ->get();
-            
+                ->get()
+                ->map(function ($item) {
+                    // Cast sang số để JavaScript không phải parse
+                    return [
+                        'Category' => $item->Category,
+                        'product_count' => (int) $item->product_count,
+                        'delta_gmv' => (float) $item->delta_gmv,
+                        'instore_gmv' => (float) $item->instore_gmv
+                    ];
+                });
+
             \Log::info('Categories API response:', ['categories' => $categories, 'count' => count($categories)]);
-            
-            return response()->json(['status' => 'success', 'data' => $categories]);
+
+            // ✅ Fix: Bọc trong key "categories" để match với JavaScript
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'categories' => $categories
+                ]
+            ]);
         } catch (\Exception $e) {
             \Log::error('Error in getCategories:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);

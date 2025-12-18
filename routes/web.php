@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\ProductController;
+
 Route::get('/', function () {
     return view('auth.sign-up');
 });
@@ -22,7 +23,7 @@ Route::view('/dashboard/top-stores', 'dashboard.top-stores')->name('top-stores')
 //profile
 Route::view('/profile', 'profile.profile');
 //revenue
-Route::view('/revenue/report-revenues', 'revenue.report-revenues')->name('reports.revenues');
+Route::view('/revenue/report-revenues', 'revenues.report-revenues')->name('reports.revenues');
 //sales
 Route::view('/sales/report-sales', 'sales.report-sales')->name('reports.sales');
 Route::view('/sales/sales', 'sales.sales')->name('sales.index');

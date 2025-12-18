@@ -18,8 +18,15 @@ class Employee extends Model
 
     protected $fillable = ['EmployeeID', 'StoreID', 'Name', 'Position'];
 
+    // Relationship: Một Employee thuộc về một Store
     public function store()
     {
         return $this->belongsTo(Store::class, 'StoreID', 'StoreID');
+    }
+
+    // Relationship: Một Employee có nhiều Transactions
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'EmployeeID', 'EmployeeID');
     }
 }
