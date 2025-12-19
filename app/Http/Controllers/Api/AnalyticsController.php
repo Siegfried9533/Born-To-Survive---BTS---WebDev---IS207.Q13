@@ -25,10 +25,10 @@ class AnalyticsController extends Controller
             ->leftJoin('transactions', 'products.ProductID', '=', 'transactions.ProductID');
 
         if ($category) {
-        $cats = array_values(array_filter(array_map('trim', explode(',', $category))));
-        if (!empty($cats)) {
-            $query->whereIn('products.Category', $cats);
-        }
+            $cats = array_values(array_filter(array_map('trim', explode(',', $category))));
+            if (!empty($cats)) {
+                $query->whereIn('products.Category', $cats);
+            }
         }
 
         if ($storesParam) {

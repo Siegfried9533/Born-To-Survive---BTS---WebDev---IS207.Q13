@@ -9,149 +9,205 @@ use Carbon\Carbon;
 
 class AnalysisChatServices
 {
-    protected $apiKey;
-    protected $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    protected $geminiKey;
+    protected $groqKey;
+    protected $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
+
+    // ĐỊNH NGHĨA DANH SÁCH MODEL ƯU TIÊN
+    protected $modelPriority = [
+        ['provider' => 'gemini', 'name' => 'gemini-2.0-flash'],
+        ['provider' => 'gemini', 'name' => 'gemini-3-flash-preview'],
+        ['provider' => 'gemini', 'name' => 'gemini-2.0-flash'],
+        ['provider' => 'groq',   'name' => 'llama-3.1-70b-versatile'],
+        ['provider' => 'groq',   'name' => 'mixtral-8x7b-32768'],
+        ['provider' => 'gemini', 'name' => 'gemini-2.0-flash-lite'],
+    ];
+
     public function __construct()
     {
-        $this->apiKey = config('services.gemini.key');
+        $this->geminiKey = config('services.gemini.key');
+        $this->groqKey = config('services.groq.key');
     }
+
     public function analyzeAndRespond($userQuestion)
     {
-        try {
-            // 1. Lấy toàn bộ dữ liệu từ Database
-            $businessData = $this->getAllContextData();
+        // Lấy dữ liệu ngữ cảnh (đã được làm sạch ký tự lỗi)
+        $businessData = $this->getAllContextData();
 
-            // 2. Xây dựng Prompt (Giữ nguyên logic BI Analyst của bạn)
-            $fullPrompt = "
-                BẠN LÀ CHUYÊN GIA PHÂN TÍCH DỮ LIỆU NỘI BỘ (BI ANALYST).
-                Dưới đây là dữ liệu thực tế trích xuất từ hệ thống quản lý của tôi:
-                ---
-                $businessData
-                ---
+        // Xây dựng prompt chuẩn
+        $fullPrompt = $this->buildPrompt($businessData, $userQuestion);
 
-                CÂU HỎI CỦA CHỦ CỬA HÀNG: \"$userQuestion\"
+        foreach ($this->modelPriority as $model) {
+            $provider = $model['provider'];
+            $modelName = $model['name'];
 
-                QUY TRÌNH PHÂN TÍCH CỦA BẠN:
-                Bước 1: Trích xuất các con số chính liên quan đến câu hỏi.
-                Bước 2: So sánh và tìm ra điểm bất thường (Ví dụ: Doanh thu giảm nhưng sản phẩm A vẫn tăng, hoặc chi nhánh B đang kéo thấp chỉ số chung).
-                Bước 3: Đưa ra nhận xét về sức khỏe doanh nghiệp (Tốt/Cảnh báo/Nguy cấp).
-                Bước 4: Đề xuất 01 hành động cụ thể để xoay chuyển tình hình.
+            try {
+                Log::info("Đang thử với: $provider ($modelName)");
 
-                RÀO CẢN PHÁP LÝ:
-                - Tuyệt đối không nhắc đến dữ liệu ngoài hệ thống (Shopee, Lazada...).
-                - Nếu không có số liệu cụ thể cho câu hỏi, hãy yêu cầu người dùng cung cấp thêm thông tin thay vì nói 'Dữ liệu không có'.
-                - Trình bày bằng Markdown chuyên nghiệp (sử dụng in đậm để nhấn mạnh con số).
-            ";
+                // GỌI API THEO PROVIDER
+                $response = ($provider === 'gemini')
+                    ? $this->callGeminiApi($modelName, $fullPrompt)
+                    : $this->callGroqApi($modelName, $fullPrompt);
 
-            // 3. Chuẩn bị Payload
-            $payload = [
-                'contents' => [['parts' => [['text' => $fullPrompt]]]],
-                'generationConfig' => [
-                    'temperature' => 0.4,
-                    'maxOutputTokens' => 1500,
-                ]
-            ];
-
-            // Log Payload để kiểm tra (chỉ nên bật khi debug)
-            Log::info("Payload gửi cho Gemini: " . json_encode($payload));
-
-            // 4. Gửi request DUY NHẤT một lần
-            $response = Http::withoutVerifying()
-                ->timeout(30) // Thêm timeout để tránh treo app
-                ->post("{$this->apiUrl}?key={$this->apiKey}", $payload);
-
-            // 5. Kiểm tra lỗi HTTP
-            if ($response->failed()) {
-                Log::error("Gemini API Error: " . $response->body());
-                return [
-                    'answer' => "Tôi gặp khó khăn khi kết nối với máy chủ AI. Vui lòng thử lại sau.",
-                    'recommendation' => "Mã lỗi: " . $response->status()
-                ];
-            }
-
-            $result = $response->json();
-
-            // 6. Trích xuất văn bản an toàn bằng data_get
-            $aiText = data_get($result, 'candidates.0.content.parts.0.text');
-
-            // 7. Xử lý trường hợp không có text (Safety filters)
-            if (!$aiText) {
-                $finishReason = data_get($result, 'candidates.0.finishReason');
-                Log::warning("Gemini không trả về text. Lý do: $finishReason");
-
-                if ($finishReason === 'SAFETY') {
-                    $aiText = "Câu hỏi hoặc dữ liệu bị hệ thống an toàn từ chối xử lý.";
-                } else {
-                    $aiText = "AI đã nhận dữ liệu nhưng không thể đưa ra câu trả lời (Lý do: $finishReason).";
+                // 1. Kiểm tra hết hạn mức (429) hoặc Lỗi nhà cung cấp
+                if ($response->status() === 429 || $response->status() === 503) {
+                    Log::warning("Model $modelName của $provider tạm thời không khả dụng. Đang đổi...");
+                    continue;
                 }
-            }
 
-            return [
-                'answer' => $aiText,
-                'recommendation' => 'Phân tích dựa trên báo cáo Snapshot hệ thống.'
-            ];
-        } catch (\Exception $e) {
-            Log::error("General Analysis Error: " . $e->getMessage());
-            return [
-                'answer' => 'Hệ thống phân tích đang gặp sự cố kỹ thuật.',
-                'recommendation' => $e->getMessage()
-            ];
+                // 2. Kiểm tra lỗi hệ thống (404, 401...)
+                if ($response->failed()) {
+                    Log::error("Lỗi từ $provider: " . $response->body());
+                    continue;
+                }
+
+                $result = $response->json();
+
+                // 3. TRÍCH XUẤT VĂN BẢN (Xử lý đa cấu trúc JSON)
+                $aiText = ($provider === 'gemini')
+                    ? data_get($result, 'candidates.0.content.parts.0.text')
+                    : data_get($result, 'choices.0.message.content');
+
+                if ($aiText) {
+                    return [
+                        'status' => 'success',
+                        'data' => [
+                            'answer' => $aiText,
+                            'recommendation' => "Phân tích hoàn tất bởi trợ lý $provider.",
+                            'model_info' => "$provider ($modelName)"
+                        ]
+                    ];
+                }
+            } catch (\Exception $e) {
+                Log::error("Sự cố nghiêm trọng với $modelName: " . $e->getMessage());
+                continue;
+            }
         }
+
+        return [
+            'status' => 'error',
+            'message' => 'Tất cả các "bộ não" AI đều đang bận. Bạn vui lòng thử lại sau 30 giây.'
+        ];
     }
-    // Lấy toàn bộ dữ liệu ngữ cảnh hiện tại để AI tham khảo
+    //Hàm gọi API Groq
+    private function callGroqApi($modelName, $prompt)
+    {
+        return Http::withoutVerifying()
+            ->withToken($this->groqKey)
+            ->timeout(20)
+            ->post("https://api.groq.com/openai/v1/chat/completions", [
+                'model' => $modelName,
+                'messages' => [
+                    ['role' => 'system', 'content' => 'Bạn là chuyên gia BI Analyst cao cấp.'],
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+                'temperature' => 0.7
+            ]);
+    }
+    //Hàm gọi API Gemini
+    private function callGeminiApi($modelName, $prompt)
+    {
+        $url = "{$this->baseUrl}{$modelName}:generateContent?key={$this->geminiKey}";
+
+        return Http::withoutVerifying()
+            ->timeout(20)
+            ->post($url, [
+                'contents' => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'maxOutputTokens' => 2048,
+                ]
+            ]);
+    }
+
+    //hàm xây dựng prompt với dữ liệu kinh doanh
+    private function buildPrompt($data, $question)
+    {
+        return "
+            BẠN LÀ CHUYÊN GIA PHÂN TÍCH DỮ LIỆU KINH DOANH (BI ANALYST) CAO CẤP.
+            Nhiệm vụ: Phân tích dữ liệu nội bộ và đưa ra các chiến lược hành động thực tế.
+
+            [DỮ LIỆU HỆ THỐNG]:
+            ---
+            $data
+            ---
+
+            [CÂU HỎI]: \"$question\"
+
+            [YÊU CẦU TRÌNH BÀY]:
+            1. 🌟PHÂN TÍCH CON SỐ: Trích xuất các chỉ số liên quan trực tiếp đến câu hỏi.
+            2. 🌟PHÁT HIỆN BẤT THƯỜNG: So sánh dữ liệu để tìm ra 'điểm đau' (ví dụ: doanh thu tăng nhưng khách VIP chi tiêu giảm, hoặc cửa hàng lớn nhất có nhân viên năng suất thấp).
+            3. 🌟ĐÁNH GIÁ SỨC KHỎE: (Tốt/Cảnh báo/Nguy cấp) kèm lý do ngắn gọn.
+            4. 🌟KIẾN NGHỊ CHIẾN LƯỢC: Đưa ra 02 hành động cụ thể. 
+               - Một hành động về Tăng trưởng (Sales/Marketing).
+               - Một hành động về Vận hành (Quản lý cửa hàng/Nhân sự).
+
+            [RÀO CẢN]:
+            - Chỉ dùng dữ liệu đã cung cấp. 
+            - Định dạng Markdown chuyên nghiệp, sử dụng list để so sánh.
+            - Kết thúc bằng câu: '**Hành động khuyến nghị:** [Nội dung hành động]' in đậm.
+        ";
+    }
+
     public function getAllContextData()
     {
-        //đồng nhất thời gian
-        // Xác định mốc thời gian đồng bộ
-        $targetMonth = now()->month;
-        $targetYear = now()->year;
-
-        // Truyền mốc thời gian vào các hàm con
-        $finance = $this->getFinanceContext($targetMonth, $targetYear);
-        $products = $this->getTopProductsContext($targetMonth, $targetYear);
-        $customers = $this->getCustomerContext($targetMonth, $targetYear);
-        $performance = $this->getPerformanceContext($targetMonth, $targetYear);
+        // Lấy mốc thời gian thực tế nhất
+        $latestTransaction = DB::table('TRANSACTIONS')->latest('DATE')->first();
+        $targetMonth = $latestTransaction ? Carbon::parse($latestTransaction->DATE)->month : now()->month;
+        $targetYear = $latestTransaction ? Carbon::parse($latestTransaction->DATE)->year : now()->year;
 
         return "
-            [BÁO CÁO TÀI CHÍNH THÁNG]:
-            $finance
+            THỜI ĐIỂM BÁO CÁO: Tháng $targetMonth/$targetYear
+            ---
+            " . $this->getFinanceContext($targetMonth, $targetYear) . "
+            ---
+            [TOP SẢN PHẨM]:
+            " . $this->getTopProductsContext($targetMonth, $targetYear) . "
+            ---
+            [KHÁCH HÀNG VIP]:
+            " . $this->getCustomerContext($targetMonth, $targetYear) . "
+            ---
+            [CHI NHÁNH & NHÂN SỰ]:
+            " . $this->getPerformanceContext($targetMonth, $targetYear) . "
+        ";
+    }
 
-            [PHÂN TÍCH SẢN PHẨM]:
-            $products
-
-            [KHÁCH HÀNG CHI TIÊU NHIỀU NHẤT]:
-            $customers
-
-            [HIỆU SUẤT CỬA HÀNG & NHÂN SỰ]:
-            $performance
-            ";
+    private function cleanString($string)
+    {
+        if (!$string) return 'N/A';
+        // Giữ lại tiếng Việt và ký tự cơ bản, loại bỏ ký tự lạ gây lỗi AI
+        return preg_replace('/[^\x20-\x7E\x{00C0}-\x{1EF9}]/u', '', $string);
     }
 
     private function getFinanceContext($m, $y)
     {
-        $thisMonth = DB::table('transactions')
+        $thisMonth = DB::table('TRANSACTIONS')
             ->whereMonth('DATE', $m)->whereYear('DATE', $y)
             ->sum('LineTotal');
 
-        $lastMonthDate = now()->subMonth();
-        $prevMonth = DB::table('transactions')
+        // Lấy tháng liền trước của mốc target (không phải của now)
+        $currentDate = Carbon::create($y, $m, 1);
+        $lastMonthDate = $currentDate->copy()->subMonth();
+
+        $prevMonth = DB::table('TRANSACTIONS')
             ->whereMonth('DATE', $lastMonthDate->month)
             ->whereYear('DATE', $lastMonthDate->year)
             ->sum('LineTotal');
 
         $growth = $prevMonth > 0 ? (($thisMonth - $prevMonth) / $prevMonth) * 100 : 0;
+        $growthText = $growth >= 0 ? "Tăng trưởng " . round($growth, 2) . "%" : "Sụt giảm " . abs(round($growth, 2)) . "%";
 
-        return "- Doanh thu tháng này: " . number_format($thisMonth) . " VND
-            - Doanh thu tháng trước: " . number_format($prevMonth) . " VND
-            - Tăng trưởng: " . round($growth, 2) . "%";
+        return "- Doanh thu tháng $m/$y: " . number_format($thisMonth) . " USD
+            - Doanh thu tháng trước: " . number_format($prevMonth) . " USD
+            - Trạng thái: $growthText";
     }
 
     private function getTopProductsContext($m, $y)
     {
-        $items = DB::table('transactions')
-            ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
-            ->whereMonth('transactions.DATE', $m) // Đồng bộ ở đây
-            ->whereYear('transactions.DATE', $y)
+        $items = DB::table('TRANSACTIONS')
+            ->join('products', 'TRANSACTIONS.ProductID', '=', 'products.ProductID')
+            ->whereMonth('TRANSACTIONS.DATE', $m) // Đồng bộ ở đây
+            ->whereYear('TRANSACTIONS.DATE', $y)
             ->select(
                 'products.Description',
                 'products.Category',
@@ -164,42 +220,42 @@ class AnalysisChatServices
 
         if ($items->isEmpty()) return "- Không có dữ liệu bán hàng trong tháng này.";
 
-        return $items->map(fn($i) => "- {$i->Description} ({$i->Category}): Bán {$i->total_qty} món, Doanh thu: " . number_format($i->total_rev) . " VND")->implode("\n");
+        return $items->map(fn($i) => "- {$i->Description} ({$i->Category}): Bán {$i->total_qty} món, Doanh thu: " . number_format($i->total_rev) . " USD")->implode("\n");
     }
 
     private function getCustomerContext($m, $y)
     {
-        $vips = DB::table('transactions')
-            ->join('customers', 'transactions.CustomerID', '=', 'customers.CustomerID')
-            ->whereMonth('transactions.DATE', $m) // Đồng bộ ở đây
-            ->whereYear('transactions.DATE', $y)
-            ->select('customers.Name', DB::raw('SUM(LineTotal) as total_spent'))
-            ->groupBy('customers.CustomerID', 'customers.Name')
+        $vips = DB::table('TRANSACTIONS')
+            ->join('CUSTOMERS', 'TRANSACTIONS.CustomerID', '=', 'CUSTOMERS.CustomerID')
+            ->whereMonth('TRANSACTIONS.DATE', $m) // Đồng bộ ở đây
+            ->whereYear('TRANSACTIONS.DATE', $y)
+            ->select('CUSTOMERS.Name', DB::raw('SUM(LineTotal) as total_spent'))
+            ->groupBy('CUSTOMERS.CustomerID', 'CUSTOMERS.Name')
             ->orderByDesc('total_spent')
             ->limit(3)->get();
 
-        return $vips->map(fn($v) => "- {$v->Name}: Chi tiêu " . number_format($v->total_spent) . " VND")->implode("\n");
+        return $vips->map(fn($v) => "- {$this->cleanString($v->Name)}: Chi tiêu " . number_format($v->total_spent) . " USD")->implode("\n");
     }
 
     private function getPerformanceContext($m, $y)
     {
-        $bestStore = DB::table('transactions')
-            ->join('stores', 'transactions.StoreID', '=', 'stores.StoreID')
-            ->whereMonth('transactions.DATE', $m)
-            ->whereYear('transactions.DATE', $y)
+        $bestStore = DB::table('TRANSACTIONS')
+            ->join('stores', 'TRANSACTIONS.StoreID', '=', 'stores.StoreID')
+            ->whereMonth('TRANSACTIONS.DATE', $m)
+            ->whereYear('TRANSACTIONS.DATE', $y)
             ->select('stores.StoreName', DB::raw('SUM(LineTotal) as rev'))
             ->groupBy('stores.StoreID', 'stores.StoreName')
             ->orderByDesc('rev')->first();
 
-        $bestEmployee = DB::table('transactions')
-            ->join('employees', 'transactions.EmployeeID', '=', 'employees.EmployeeID')
-            ->whereMonth('transactions.DATE', $m)
-            ->whereYear('transactions.DATE', $y)
-            ->select('employees.Name', DB::raw('SUM(LineTotal) as rev'))
-            ->groupBy('employees.EmployeeID', 'employees.Name')
+        $bestEmployee = DB::table('TRANSACTIONS')
+            ->join('EMPLOYEES', 'TRANSACTIONS.EmployeeID', '=', 'EMPLOYEES.EmployeeID')
+            ->whereMonth('TRANSACTIONS.DATE', $m)
+            ->whereYear('TRANSACTIONS.DATE', $y)
+            ->select('EMPLOYEES.Name', DB::raw('SUM(LineTotal) as rev'))
+            ->groupBy('EMPLOYEES.EmployeeID', 'EMPLOYEES.Name')
             ->orderByDesc('rev')->first();
 
-        return "- Cửa hàng xuất sắc nhất tháng: " . ($bestStore->StoreName ?? 'N/A') . " (" . number_format($bestStore->rev ?? 0) . " VND)
-            - Nhân viên xuất sắc nhất tháng: " . ($bestEmployee->Name ?? 'N/A') . " (" . number_format($bestEmployee->rev ?? 0) . " VND)";
+        return "- Cửa hàng xuất sắc nhất tháng: " . ($bestStore->StoreName ?? 'N/A') . " (" . number_format($bestStore->rev ?? 0) . " USD)
+            - Nhân viên xuất sắc nhất tháng: " . ($this->cleanString($bestEmployee->Name) ?? 'N/A') . " (" . number_format($bestEmployee->rev ?? 0) . " USD)";
     }
 }

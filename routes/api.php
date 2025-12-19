@@ -15,7 +15,6 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\ExportController;
-
 // ============================================================
 // AUTH ROUTES (Public - không cần token)
 // ============================================================
@@ -42,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user()->load('employee');
     });
-    
+
     Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
@@ -81,7 +80,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/analytics/stores', [StoreController::class, 'index']); 
+Route::get('/analytics/stores', [StoreController::class, 'index']);
 // Minimal stores list used by frontend dropdowns
 Route::get('/stores', [StoreController::class, 'listAll']);
 Route::get('/products/categories', [ProductController::class, 'getCategories']);

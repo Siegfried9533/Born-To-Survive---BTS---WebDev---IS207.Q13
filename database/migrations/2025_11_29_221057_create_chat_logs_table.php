@@ -11,9 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('chat_logs', function (Blueprint $table) {
+        Schema::create('CHAT_LOGS', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users');
+
+            // Chỉnh sửa quan trọng ở đây:
+            // 1. Khai báo cột user_id (phải cùng kiểu dữ liệu với cột id của bảng ACCOUNT)
+            $table->unsignedBigInteger('user_id');
+
+            // 2. Thiết lập khóa ngoại trỏ đúng vào bảng ACCOUNT
+            $table->foreign('user_id')
+                ->references('id')
+                ->on('ACCOUNT')
+                ->onDelete('cascade'); // Tùy chọn: Xóa account thì xóa luôn log
+
             $table->text('question');
             $table->text('bot_response');
             $table->text('recommendation')->nullable();
