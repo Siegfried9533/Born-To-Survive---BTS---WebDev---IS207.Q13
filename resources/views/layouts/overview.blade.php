@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>@yield('title', 'Admin Dashboard')</title>
@@ -25,7 +24,7 @@
     {{-- Load App Core for auth --}}
     <script src="/frontend/js/app-core.js"></script>
     
-    {{-- Auth Check (redirect to /login if no token) --}}
+    {{-- Auth Check --}}
     @include('partials.auth-check')
 </head>
 
@@ -36,14 +35,12 @@
 
     <main class="main-content">
         <header id="app-header">
-            @yield('header', view('partials.header'))
+            @yield('header', view('partials.overview-header'))
         </header>
 
         <div id="page-content">
             @yield('content')
         </div>
-
-        @include('chatbox.chatbox')
 
         <footer id="app-footer">
             @include('partials.footer')

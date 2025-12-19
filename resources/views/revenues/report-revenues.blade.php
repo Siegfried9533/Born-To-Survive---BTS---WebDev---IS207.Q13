@@ -58,24 +58,31 @@
                     </div>
 
 
-                    <!-- CHARTS -->
                     <div class="row g-3 mb-4">
                         <div class="col-lg-6">
                             <div class="chart-card shadow-sm p-3 rounded">
                                 <h5 class="mb-3 fw-semibold">Revenue Trend</h5>
-                                <canvas id="lineChart"></canvas>
+                                <div class="chart-container" style="position: relative; height: 320px; width: 100%;">
+                                    <canvas id="lineChart"></canvas>
+                                </div>
                             </div>
                         </div>
+
                         <div class="col-lg-6">
                             <div class="chart-card shadow-sm p-3 rounded">
                                 <h5 class="mb-3 fw-semibold">Revenue Comparison</h5>
-                                <canvas id="barChart"></canvas>
+                                <div class="chart-container" style="position: relative; height: 320px; width: 100%;">
+                                    <canvas id="barChart"></canvas>
+                                </div>
                             </div>
                         </div>
+
                         <div class="col-12">
                             <div class="chart-card shadow-sm p-3 rounded mt-3">
                                 <h5 class="mb-3 fw-semibold">Category Distribution</h5>
-                                <canvas id="pieChart"></canvas>
+                                <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
+                                    <canvas id="pieChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -100,3 +107,7 @@
             </div>
         </section>
 @endsection
+
+@push('scripts')
+    @vite('resources/js/report-revenues.js')
+@endpush

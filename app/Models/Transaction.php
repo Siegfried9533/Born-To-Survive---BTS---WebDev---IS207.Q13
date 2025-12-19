@@ -9,20 +9,58 @@ class Transaction extends Model
 {
     use HasFactory;
 
-    // Tên bảng trong database (phải chính xác)
     protected $table = 'transactions';
 
-    // Khóa chính của bảng giao dịch
+    // Bảng không có khóa tự tăng; dùng InvoiceID làm khóa chính logic
     protected $primaryKey = 'InvoiceID';
+    public $incrementing = false;
+    protected $keyType = 'int';
 
-    // Các cột có thể thao tác
     protected $fillable = [
-        'InvoiceID', 
-        'StoreID', 
-        'LineTotal', // <--- Cột quan trọng để tính tổng
-        'CustomerID', 
-        'ProductID', 
-        'Quantity', 
-        'DATE'
+        'InvoiceID',
+        'InvoiceHASH',
+        'Line',
+        'CustomerID',
+        'ProductID',
+        'Size',
+        'Color',
+        'UnitPrice',
+        'Quantity',
+        'DATE',
+        'DiscountID',
+        'LineTotal',
+        'StoreID',
+        'EmployeeID',
+        'Currency',
+        'CurrencySymbol',
+        'SKU',
+        'TransactionType',
+        'PaymentMethod',
+        'InvoiceTotal',
     ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'ProductID', 'ProductID');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customers::class, 'CustomerID', 'CustomerID');
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'StoreID', 'StoreID');
+    }
+
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class, 'EmployeeID', 'EmployeeID');
+    }
+
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class, 'DiscountID', 'DiscountID');
+    }
 }

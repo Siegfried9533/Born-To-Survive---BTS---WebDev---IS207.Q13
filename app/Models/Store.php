@@ -11,13 +11,26 @@ class Store extends Model
 
     protected $table = 'stores';
 
-    // Cấu hình khóa chính (Quan trọng để join đúng)
+    // =========================================================
+    // 2. CẤU HÌNH KHÓA CHÍNH (QUAN TRỌNG NHẤT)
+    // =========================================================
+    // Khóa chính là StoreID (int, không tự tăng)
     protected $primaryKey = 'StoreID';
-    public $incrementing = false; // ID tự nhập (hoặc true nếu tự tăng, nhưng false an toàn hơn cho logic của bạn)
+    public $incrementing = false;
     protected $keyType = 'int';
 
+    // =========================================================
+    // 3. KHAI BÁO CÁC CỘT ĐƯỢC PHÉP CHỈNH SỬA (Mass Assignment)
+    // =========================================================
     protected $fillable = [
-        'StoreID', 'StoreName', 'City', 'Country', 'ZipCode', 'NumberOfEmployee', 'Latitude', 'Longitude'
+        'StoreID',
+        'Country',
+        'City',
+        'StoreName',
+        'NumberOfEmployee',
+        'ZipCode',
+        'Latitude',
+        'Longitude'
     ];
 
     // Quan hệ: 1 Store có nhiều Transaction

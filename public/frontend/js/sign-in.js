@@ -8,6 +8,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!form) return;
 
+    // Nếu đã login rồi thì redirect đến dashboard
+    if (App.isLoggedIn()) {
+        window.location.href = '/dashboard/overview';
+        return;
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         error.textContent = '';
@@ -17,20 +23,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Disable button khi đang xử lý
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Đang đăng nhập...';
+
         try {
             const data = await App.apiPost('/auth/login', {
                 email: email.value.trim(),
                 password: pass.value,
             });
 
+            // Lưu token và user info
             App.setToken(data.access_token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            App.setUser(data.user);
 
-            // Sau login → vào dashboard
-            window.location.href = '/frontend/pages/overview.html';
+            // Redirect đến dashboard
+            window.location.href = '/dashboard/overview';
         } catch (err) {
             console.error(err);
             error.textContent = err.message || 'Đăng nhập thất bại';
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
         }
     });
 });

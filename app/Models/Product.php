@@ -12,24 +12,25 @@ class Product extends Model
 
     protected $table = 'products';
 
-    // 1. Cấu hình Khóa chính (BẮT BUỘC VỚI DB CỦA BẠN)
-    protected $primaryKey = 'ProdID'; // Tên cột khóa chính
-    public $incrementing = false;     // Tắt chế độ tự tăng (Auto-increment)
-    protected $keyType = 'string';    // Khai báo kiểu dữ liệu là chuỗi
+    // Khóa chính dùng ProductID (int, không tự tăng)
+    protected $primaryKey = 'ProductID';
+    public $incrementing = false;
+    protected $keyType = 'int';
 
-    // 2. Cho phép gán dữ liệu hàng loạt (Mass Assignment)
+    // Các cột cho phép gán
     protected $fillable = [
-        'ProdID',
+        'ProductID',
         'Category',
         'SubCategory',
         'Description',
-        'ProductionCost'
+        'Color',
+        'Size',
+        'ProductCost',
     ];
 
-    // 3. Định nghĩa quan hệ với SKU (1 Sản phẩm có nhiều biến thể)
-    // Để sau này muốn lấy sản phẩm kèm các size/màu thì chỉ cần gọi ->with('skus')
-    public function skus()
+    // Quan hệ: một sản phẩm có nhiều giao dịch
+    public function transactions()
     {
-        return $this->hasMany(ProductSku::class, 'ProdID', 'ProdID');
+        return $this->hasMany(Transaction::class, 'ProductID', 'ProductID');
     }
 }

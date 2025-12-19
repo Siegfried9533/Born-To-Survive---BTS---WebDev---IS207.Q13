@@ -982,15 +982,65 @@ function initProfilePage() {
 }
 
 /* ======================================================= */
-/* OVERVIEW: ĐỌC FILE overview-data.txt → VẼ BIỂU ĐỒ */
+/* OVERVIEW: ƯU TIÊN GỌI API /api/dashboard/overview; fallback fake-data */
 /* ======================================================= */
+function safeToArray(val) {
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") {
+        return val
+            .split(",")
+            .map((x) => x.trim())
+            .filter((x) => x !== "");
+    }
+    return [];
+}
+function safeToNumberArray(val) {
+    return safeToArray(val).map((x) => Number(x));
+}
+
+function initOverviewCharts() {
+    if (!document.getElementById("gmvEvolutionChart")) return;
+
+    const apiUrl = `/api/dashboard/overview`;
+    console.log("[Overview] Calling API:", apiUrl);
+
+    $.get(apiUrl)
+        .done(function (resp) {
+            console.log("[Overview] API ok:", resp);
+            const payload = resp && resp.GMV_Evolution ? resp : resp.data || resp;
+
+            const gmvData = {
+                labels: safeToArray(payload.GMV_Evolution.labels),
+                gmv: safeToNumberArray(payload.GMV_Evolution.gmv),
+                growth: safeToNumberArray(payload.GMV_Evolution.growth),
+            };
+            const modalabData = {
+                labels: safeToArray(payload.Modalab_Synthesis.labels),
+                values: safeToNumberArray(payload.Modalab_Synthesis.values),
+            };
+            const channelsData = {
+                labels: safeToArray(payload.Sales_Channels.labels),
+                values: safeToNumberArray(payload.Sales_Channels.values),
+                colors: safeToArray(payload.Sales_Channels.colors),
+            };
+
+            renderGMVEvolution(gmvData);
+            renderModalabSynthesis(modalabData);
+            renderSalesChannels(channelsData);
+        })
+        .fail(function (xhr) {
+            console.warn("API overview lỗi, fallback fake-data.", xhr.status, xhr.responseText);
+            initOverviewChartsFromFile();
+        });
+}
+
+// Fallback: đọc file fake-data
 function initOverviewChartsFromFile() {
     if (!document.getElementById("gmvEvolutionChart")) return;
 
     $.get("../../assets/fake-data/overview-data.txt", function (text) {
         const data = parseOverviewData(text);
 
-        // Vẽ 3 biểu đồ
         renderGMVEvolution(data.GMV_Evolution);
         renderModalabSynthesis(data.Modalab_Synthesis);
         renderSalesChannels(data.Sales_Channels);
@@ -1022,10 +1072,18 @@ function parseOverviewData(text) {
 
 // === 1. GMV Evolution (Line on top of Bar) ===
 function renderGMVEvolution(data) {
-    const ctx = document.getElementById("gmvEvolutionChart").getContext("2d");
-    const labels = data.labels.split(",");
-    const gmv = data.gmv.split(",").map(Number);
-    const growth = data.growth.split(",").map(Number);
+    const chartId = "gmvEvolutionChart";
+    const existing = Chart.getChart(chartId);
+    if (existing) existing.destroy();
+
+    const ctx = document.getElementById(chartId).getContext("2d");
+    const labels = Array.isArray(data.labels)
+        ? data.labels
+        : safeToArray(data.labels);
+    const gmv = Array.isArray(data.gmv) ? data.gmv : safeToNumberArray(data.gmv);
+    const growth = Array.isArray(data.growth)
+        ? data.growth
+        : safeToNumberArray(data.growth);
 
     new Chart(ctx, {
         type: "bar",
@@ -1099,9 +1157,17 @@ function renderGMVEvolution(data) {
 
 // === 2. Modalab Synthesis ===
 function renderModalabSynthesis(data) {
-    const ctx = document.getElementById("modalabChart").getContext("2d");
-    const labels = data.labels.split(",");
-    const values = data.values.split(",").map(Number);
+    const chartId = "modalabChart";
+    const existing = Chart.getChart(chartId);
+    if (existing) existing.destroy();
+
+    const ctx = document.getElementById(chartId).getContext("2d");
+    const labels = Array.isArray(data.labels)
+        ? data.labels
+        : safeToArray(data.labels);
+    const values = Array.isArray(data.values)
+        ? data.values
+        : safeToNumberArray(data.values);
 
     new Chart(ctx, {
         type: "bar",
@@ -1140,10 +1206,20 @@ function renderModalabSynthesis(data) {
 
 // === 3. Sales Channels (Percentage of Products Sold) ===
 function renderSalesChannels(data) {
-    const ctx = document.getElementById("salesChannelsChart").getContext("2d");
-    const labels = data.labels.split(",");
-    const values = data.values.split(",").map(Number);
-    const colors = data.colors.split(",");
+    const chartId = "salesChannelsChart";
+    const existing = Chart.getChart(chartId);
+    if (existing) existing.destroy();
+
+    const ctx = document.getElementById(chartId).getContext("2d");
+    const labels = Array.isArray(data.labels)
+        ? data.labels
+        : safeToArray(data.labels);
+    const values = Array.isArray(data.values)
+        ? data.values
+        : safeToNumberArray(data.values);
+    const colors = Array.isArray(data.colors)
+        ? data.colors
+        : safeToArray(data.colors);
 
     new Chart(ctx, {
         type: "doughnut",
@@ -1215,7 +1291,7 @@ if (typeof Chart !== "undefined") {
 /* GỌI KHI TRANG OVERVIEW */
 $(document).ready(function () {
     if (window.location.pathname.includes("overview")) {
-        initOverviewChartsFromFile();
+        initOverviewCharts();
     }
 });
 

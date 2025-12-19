@@ -2,6 +2,7 @@
 
 function fillProfileFromUser(user) {
     if (!user) return;
+    
     // Helper: try multiple possible paths (supports backend using capitalized DB columns)
     const getField = (obj, paths) => {
         for (const p of paths) {
@@ -27,6 +28,7 @@ function fillProfileFromUser(user) {
         "name",
         "full_name",
         "Name",
+        "username",
         "employee.Name",
     ]);
     const email = getField(user, ["email", "Email", "employee.Email"]);
@@ -101,10 +103,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error("Parse local user error", e);
     }
 
-    // 2. Gọi API /profile để lấy dữ liệu chính xác từ backend
+    // 2. Gọi API /auth/me để lấy dữ liệu chính xác từ backend
     try {
-        const res = await App.apiGet("/profile");
-        const user = res.user || res; // tuỳ backend trả {user: {...}} hay {...}
+        const user = await App.apiGet("/auth/me");
         fillProfileFromUser(user);
 
         // Cập nhật lại localStorage
@@ -128,38 +129,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     const dobInput = document.getElementById("dob-picker");
     let editing = false;
 
-    btnEdit.addEventListener("click", async () => {
-        if (!editing) {
-            inputs.forEach((i) => (i.disabled = false));
-            if (dobInput) dobInput.disabled = false;
-            btnEdit.textContent = "Save";
-            editing = true;
-        } else {
-            // Current backend `ProfileController::update` expects `name` (to update Employee.Name)
-            const nameVal = document.getElementById("fullName").value;
+    if (btnEdit) {
+        btnEdit.addEventListener("click", async () => {
+            if (!editing) {
+                inputs.forEach((i) => (i.disabled = false));
+                if (dobInput) dobInput.disabled = false;
+                btnEdit.textContent = "Save";
+                editing = true;
+            } else {
+                // Collect form values
+                const usernameVal = document.getElementById("fullName").value;
+                const emailVal = document.getElementById("email").value;
 
-            const payload = {
-                name: nameVal,
-            };
+                const payload = {};
+                if (usernameVal) payload.username = usernameVal;
+                if (emailVal) payload.email = emailVal;
 
-            try {
-                const res = await App.apiPut("/profile/update", payload);
-                // Backend returns the updated user model
-                const updatedUser = res.user || res;
+                try {
+                    const res = await App.apiPut("/auth/profile", payload);
+                    // Backend returns the updated user model
+                    const updatedUser = res.user || res;
 
-                alert("Cập nhật profile thành công!");
+                    alert("Cập nhật profile thành công!");
 
-                inputs.forEach((i) => (i.disabled = true));
-                if (dobInput) dobInput.disabled = true;
-                btnEdit.textContent = "Edit";
-                editing = false;
+                    inputs.forEach((i) => (i.disabled = true));
+                    if (dobInput) dobInput.disabled = true;
+                    btnEdit.textContent = "Edit";
+                    editing = false;
 
-                // Save normalized user object to localStorage and refresh UI
-                localStorage.setItem("user", JSON.stringify(updatedUser));
-                fillProfileFromUser(updatedUser);
-            } catch (err) {
-                alert(err.message || "Cập nhật profile thất bại");
+                    // Save normalized user object to localStorage and refresh UI
+                    localStorage.setItem("user", JSON.stringify(updatedUser));
+                    fillProfileFromUser(updatedUser);
+                } catch (err) {
+                    alert(err.message || "Cập nhật profile thất bại");
+                }
             }
-        }
-    });
+        });
+    }
 });

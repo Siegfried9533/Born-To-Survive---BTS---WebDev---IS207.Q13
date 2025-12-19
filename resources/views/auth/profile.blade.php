@@ -4,12 +4,15 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>My Profile</title>
+    <title>My Profile - Modalab</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="shortcut icon" href="/assets/images/Favicon.png" type="image/x-icon">
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="/frontend/css/style.css">
+    
+    <script src="/frontend/js/app-core.js"></script>
+    @include('partials.auth-check')
 </head>
 
 <body>
@@ -17,7 +20,7 @@
 
     <main class="main-content fade-page page-profile">
         <header id="app-header"></header>
-<div class="container-fluid mt-4">
+        <div class="container-fluid mt-4">
             <div class="row">
                 <div class="col-lg-8">
                     <div class="card profile-card shadow-sm">
@@ -38,8 +41,7 @@
                             <form class="mt-4">
                                 <div class="mb-3">
                                     <label for="fullName" class="form-label fs-small fw-bold">Full Name</label>
-                                    <input type="text" class="form-control profile-input" id="fullName"
-                                        value="" disabled>
+                                    <input type="text" class="form-control profile-input" id="fullName" value="" disabled>
                                 </div>
 
                                 <div class="row">
@@ -51,28 +53,24 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4 mb-3">
-                                        <label for="dob-picker" class="form-label fs-small fw-bold">Date of
-                                            Birth</label>
+                                        <label for="dob-picker" class="form-label fs-small fw-bold">Date of Birth</label>
                                         <div class="input-group">
                                             <span class="input-group-text profile-input-icon">
                                                 <i class="fa-solid fa-calendar-days"></i>
                                             </span>
-                                            <input type="text" class="form-control" id="dob-picker"
-                                                placeholder="Select date" readonly disabled>
+                                            <input type="text" class="form-control" id="dob-picker" placeholder="Select date" readonly disabled>
                                         </div>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="country" class="form-label fs-small fw-bold">Country</label>
-                                        <input type="text" class="form-control profile-input" id="country"
-                                            placeholder="Your Country" disabled>
+                                        <input type="text" class="form-control profile-input" id="country" placeholder="Your Country" disabled>
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
                                     <label for="timeZone" class="form-label fs-small fw-bold">Time Zone</label>
                                     <select class="form-select profile-input" id="timeZone" disabled>
-                                        <option value="Asia/Bangkok" selected>(UTC+07:00) Bangkok, Hanoi, Jakarta
-                                        </option>
+                                        <option value="Asia/Bangkok" selected>(UTC+07:00) Bangkok, Hanoi, Jakarta</option>
                                         <option value="Asia/Kuala_Lumpur">(UTC+08:00) Kuala Lumpur, Singapore</option>
                                         <option value="Asia/Tokyo">(UTC+09:00) Tokyo, Seoul</option>
                                         <option value="Europe/Paris">(UTC+02:00) Paris, Berlin</option>
@@ -82,8 +80,7 @@
 
                                 <div class="mb-3">
                                     <label for="address" class="form-label fs-small fw-bold">Address</label>
-                                    <input type="text" class="form-control profile-input" id="address"
-                                        placeholder="Your Address" disabled>
+                                    <input type="text" class="form-control profile-input" id="address" placeholder="Your Address" disabled>
                                 </div>
 
                                 <hr class="my-4">
@@ -91,14 +88,13 @@
                                 <h5 class="fw-bold mb-4">Security Settings</h5>
                                 <div class="mb-3">
                                     <label for="email" class="form-label fs-small fw-bold">Email Address</label>
-                                    <input type="email" class="form-control" id="email" value=""
-                                        disabled>
+                                    <input type="email" class="form-control" id="email" value="" disabled>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fs-small fw-bold">Password</label>
                                     <div class="d-flex align-items-center">
                                         <span class="text-muted">Reset your password</span>
-                                        <a href="../pages/reset-pwd.html" class="btn btn-sm btn-outline-primary ms-3">Reset</a>
+                                        <a href="{{ route('auth.reset-password') }}" class="btn btn-sm btn-outline-primary ms-3">Reset</a>
                                     </div>
                                 </div>
 
@@ -124,14 +120,12 @@
 
                                 <div class="mb-2">
                                     <label for="task-time-input" class="form-label fs-small">Time</label>
-                                    <input type="text" class="form-control" id="task-time-input"
-                                        placeholder="Select time...">
+                                    <input type="text" class="form-control" id="task-time-input" placeholder="Select time...">
                                 </div>
 
                                 <div class="mb-2">
                                     <label for="task-text-input" class="form-label fs-small">Task Details</label>
-                                    <input type="text" class="form-control" id="task-text-input"
-                                        placeholder="Enter task details...">
+                                    <input type="text" class="form-control" id="task-text-input" placeholder="Enter task details...">
                                 </div>
 
                                 <button type="submit" class="btn btn-sm btn-success w-100 mt-2" id="task-form-add">
@@ -150,19 +144,16 @@
     </main>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/utc.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/timezone.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/customParseFormat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="../js/app-core.js"></script>
-    <script src="../js/main.js"></script>
-    <script src="../js/profile.js"></script>
+    <script src="/frontend/js/main.js"></script>
+    <script src="/frontend/js/profile.js"></script>
 </body>
 
 </html>

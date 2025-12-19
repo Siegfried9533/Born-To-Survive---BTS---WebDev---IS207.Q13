@@ -23,9 +23,9 @@ class ExportController extends Controller
             case 'customers':
                 $fileName = "customers_export_{$now}.csv";
                 $columns  = [
-                    'CusID',
+                    'CustomerID',
                     'Name',
-                    'Phone',
+                    'Telephone',
                     'Email',
                     'City',
                     'Country',
@@ -40,10 +40,11 @@ class ExportController extends Controller
                 $fileName = "stores_export_{$now}.csv";
                 $columns  = [
                     'StoreID',
-                    'Name',
+                    'StoreName',
                     'City',
                     'Country',
-                    'ZIPCode',
+                    'NumberOfEmployee',
+                    'ZipCode',
                     'Latitude',
                     'Longitude',
                 ];
@@ -53,28 +54,43 @@ class ExportController extends Controller
             case 'products':
                 $fileName = "products_export_{$now}.csv";
                 $columns  = [
-                    'ProdID',
+                    'ProductID',
                     'Category',
                     'SubCategory',
                     'Description',
-                    'ProductionCost',
+                    'Color',
+                    'Size',
+                    'ProductCost',
                 ];
                 $query    = DB::table('products')->select($columns);
                 break;
 
-            case 'invoices':
-                $fileName = "invoices_export_{$now}.csv";
+            case 'transactions':
+            case 'invoices': // alias cũ
+                $fileName = "transactions_export_{$now}.csv";
                 $columns  = [
                     'InvoiceID',
-                    'Date',
+                    'InvoiceHASH',
+                    'Line',
+                    'CustomerID',
+                    'ProductID',
+                    'Size',
+                    'Color',
+                    'UnitPrice',
+                    'Quantity',
+                    'DATE',
+                    'DiscountID',
+                    'LineTotal',
+                    'StoreID',
+                    'EmployeeID',
+                    'Currency',
+                    'CurrencySymbol',
+                    'SKU',
                     'TransactionType',
                     'PaymentMethod',
-                    'Currency',
-                    'CusID',
-                    'EmpID',
-                    'StoreID',
+                    'InvoiceTotal',
                 ];
-                $query    = DB::table('invoices')->select($columns);
+                $query    = DB::table('transactions')->select($columns);
                 break;
 
             default:

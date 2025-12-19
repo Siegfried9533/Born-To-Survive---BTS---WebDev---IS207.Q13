@@ -1,12 +1,23 @@
-@extends('layouts.app')
+@extends('layouts.overview')
 
 @section('title', 'Overview')
 
+@section('header')
+    @include('partials.overview-header')
+@endsection
+
 @section('content')
 
-    <div id="filter-container">
-        @include('partials.filter')
+    {{-- Loading Overlay --}}
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading data...</p>
+        </div>
     </div>
+
+    {{-- Bộ lọc riêng cho Overview (chỉ chọn Store) --}}
+    @include('partials.overview-filter')
 
     <section class="container-fluid-dashboard px-4 py-3">
         <div class="row g-4">
@@ -56,6 +67,8 @@
 @endsection
 
 @push('scripts')
+    {{-- Litepicker CDN cho date-range đôi --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
+    <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
     @vite('resources/js/overview.js')
-    @vite('resources/js/filter-component.js')
 @endpush

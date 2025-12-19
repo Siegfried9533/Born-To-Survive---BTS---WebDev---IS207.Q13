@@ -2,7 +2,7 @@
     <div class="banner-background"></div>
 
     <div class="top-row d-flex justify-content-between align-items-center">
-        <h5 class="page-title mb-0 fw-bold">Welcome to ModaLab !</h5>
+        <h5 class="page-title mb-0 fw-bold">Sales Report</h5>
 
         <form class="search position-relative">
             <span class="search-icon position-absolute">
@@ -43,16 +43,18 @@
         </div>
     </div>
 
+    {{-- Date Range Picker: From A to B --}}
     <div class="date-filter-row d-flex justify-content-start">
         <div class="date-range-picker">
-            <button type="button" class="date-icon-btn" id="calendarTriggerBtn">
+            <button type="button" class="date-icon-btn" id="salesCalendarTriggerBtn">
                 <i class="fa-solid fa-calendar-days date-icon"></i>
             </button>
-            {{-- <input type="text" class="date-input" id="startDateDisplay" readonly> --}}
-            <input type="date" id="startDate" value="2023-01-01">
+            <input type="text" class="date-input" id="salesStartDateDisplay" readonly placeholder="Start date">
             <span class="date-separator fw-bold text-dark">To</span>
-            <input type="date" id="endDate" value="2025-01-01">
-            {{-- <input type="text" class="date-input" id="endDateDisplay" readonly> --}}
+            <input type="text" class="date-input" id="salesEndDateDisplay" readonly placeholder="End date">
+            {{-- Hidden inputs để lưu giá trị thực --}}
+            <input type="hidden" id="salesStartDate" value="">
+            <input type="hidden" id="salesEndDate" value="">
         </div>
     </div>
 
