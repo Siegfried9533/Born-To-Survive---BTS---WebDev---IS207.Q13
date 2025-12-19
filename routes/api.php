@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\ExportController;
+use App\Http\Controllers\Api\TopCategoryController;
 // ============================================================
 // AUTH ROUTES (Public - không cần token)
 // ============================================================
@@ -80,12 +81,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::get('/top/top-categories', [TopCategoryController::class, 'getCategories']);
 Route::get('/analytics/stores', [StoreController::class, 'index']);
 // Minimal stores list used by frontend dropdowns
 Route::get('/stores', [StoreController::class, 'listAll']);
 Route::get('/products/categories', [ProductController::class, 'getCategories']);
 Route::get('/products/subcategories', [ProductController::class, 'getSubCategories']);
 Route::apiResource('products', ProductController::class);
+
+
 
 Route::get('/stores/{id}/metrics', [AnalyticsController::class, 'getStoreMetrics']);
 Route::get('/stores/{id}/employees', [StoreController::class, 'getEmployees']);

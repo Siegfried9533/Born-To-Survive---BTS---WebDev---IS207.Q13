@@ -9,7 +9,7 @@ function initTopCategory() {
 
   // Lấy dữ liệu từ API categories
   const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
-  const apiUrl = `${baseUrl}/api/products/categories`;
+  const apiUrl = `${baseUrl}/api/top/top-categories`;
 
   const $tbody = $("#topCategoryTable tbody");
 

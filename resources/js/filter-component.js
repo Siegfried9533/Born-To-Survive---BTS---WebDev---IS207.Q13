@@ -57,7 +57,7 @@ function initFilterComponent() {
     const $categoryDropdown = $("#category-filter-group .filter-dropdown");
     if (!$categoryDropdown.length) return;
       const baseUrl = window.Laravel.baseUrl; // Lấy biến từ Bước 1
-    const apiUrl = `${baseUrl}/api/products/categories`;
+    const apiUrl = `${baseUrl}/api/top/top-categories`;
 
     // Hiển thị loading nhỏ trong dropdown
     const $header = $categoryDropdown.find(".filter-dropdown-header");
