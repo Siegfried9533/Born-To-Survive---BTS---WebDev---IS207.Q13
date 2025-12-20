@@ -156,7 +156,7 @@ class ProductController extends Controller
                     // Tổng doanh thu từng sản phẩm
                     DB::raw('SUM(COALESCE(LineTotal, UnitPrice * Quantity)) as total_item_gmv'),
                     // Doanh thu tại cửa hàng (giữ logic của bạn)
-                    DB::raw('SUM(CASE WHEN TransactionType IS NULL OR TransactionType = "In-Store" 
+                    DB::raw('SUM(CASE WHEN TransactionType IS NULL OR TransactionType = \'In-Store\' 
                                 THEN COALESCE(LineTotal, UnitPrice * Quantity) ELSE 0 END) as instore_item_gmv')
                 );
 

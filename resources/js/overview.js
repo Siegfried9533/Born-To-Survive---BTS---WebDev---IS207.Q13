@@ -44,30 +44,6 @@ async function initOverviewChartsFromApi(filterParams = {}) {
     // Hiển thị loading overlay
     showLoading();
 
-    //test
-    try {
-        const response = await fetchDashboardOverview(filterParams);
-        const data = response.data;
-
-        console.log("1. Data đã về tới JS");
-
-        if (data.Modalab_Synthesis) {
-            console.log("2. Bắt đầu vẽ Modalab...");
-            renderModalabSynthesis(data.Modalab_Synthesis);
-        }
-
-        if (data.Sales_Channels) {
-            console.log("3. Bắt đầu vẽ Sales Channels...");
-            renderSalesChannels(data.Sales_Channels);
-        }
-        
-        console.log("4. Kết thúc quá trình vẽ");
-
-    } catch (error) {
-        console.error("❌ Lỗi cụ thể:", error);
-    }
-    //
-
     try {
         // Dùng axios thay vì jQuery để đảm bảo ổn định
         const response = await fetchDashboardOverview(params);
@@ -145,11 +121,20 @@ function collectFilters() {
 
 // === 1. GMV Evolution (Line on top of Bar) ===
 function renderGMVEvolution(data) {
-    const ctx = document.getElementById("gmvEvolutionChart").getContext("2d");
+    const canvasId = "gmvEvolutionChart";
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext("2d");
 
-    // ⚠️ SỬA 2: Hủy biểu đồ cũ nếu tồn tại
+    // ⚠️ SỬA 2: Hủy biểu đồ cũ nếu tồn tại (kiểm tra cả biến và instance trên canvas)
+    const existingChart = Chart.getChart(canvasId);
+    if (existingChart) {
+        existingChart.destroy();
+    }
     if (gmvChartInstance) {
         gmvChartInstance.destroy();
+        gmvChartInstance = null;
     }
 
     // Helper xử lý dữ liệu an toàn
@@ -232,10 +217,19 @@ function renderGMVEvolution(data) {
 
 // === 2. Modalab Synthesis ===
 function renderModalabSynthesis(data) {
-    const ctx = document.getElementById("modalabChart").getContext("2d");
+    const canvasId = "modalabChart";
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
 
+    const ctx = canvas.getContext("2d");
+
+    const existingChart = Chart.getChart(canvasId);
+    if (existingChart) {
+        existingChart.destroy();
+    }
     if (modalabChartInstance) {
         modalabChartInstance.destroy();
+        modalabChartInstance = null;
     }
 
     const labels = Array.isArray(data.labels) ? data.labels : String(data.labels || "").split(",");
@@ -288,10 +282,19 @@ function renderModalabSynthesis(data) {
 
 // === 3. Sales Channels ===
 function renderSalesChannels(data) {
-    const ctx = document.getElementById("salesChannelsChart").getContext("2d");
+    const canvasId = "salesChannelsChart";
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
 
+    const ctx = canvas.getContext("2d");
+
+    const existingChart = Chart.getChart(canvasId);
+    if (existingChart) {
+        existingChart.destroy();
+    }
     if (salesChartInstance) {
         salesChartInstance.destroy();
+        salesChartInstance = null;
     }
 
     const labels = Array.isArray(data.labels) ? data.labels : String(data.labels || "").split(",");
@@ -392,8 +395,8 @@ function initFilters() {
         triggerBtn.addEventListener('click', () => pickerA.show());
     }
 
-    // Auto set default: hôm nay
-    const today = dayjs();
+    // Auto set default: 18/03/2025
+    const today = dayjs('2025-03-18');
     const todayStr = today.format('YYYY-MM-DD');
     
     // Set giá trị cho hidden inputs và display inputs

@@ -2,452 +2,256 @@ import Chart from 'chart.js/auto';
 import $ from 'jquery';
 import { fetchSalesAnalytics } from './api.js';
 
-/* ======================================================= */
-/* REPORT REVENUES PAGE: Load revenue data từ API */
-/* ======================================================= */
 
-let lineChartInstance = null;
-let barChartInstance = null;
-let pieChartInstance = null;
-let currentViewMode = 'daily';
+// Quản lý trạng thái ứng dụng
+const state = {
+    instances: { line: null, bar: null, pie: null },
+    currentViewMode: 'daily',
+    isLoading: false,
+    lastFilters: {}
+};
 
-async function loadRevenueData(from = null, to = null) {
-    console.log('Loading revenue data...');
+/* ================= HELPERS ================= */
+const formatCurrency = (val) => 
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+
+const calculateGrowth = (current, previous) => {
+    if (!previous || previous <= 0) return 0;
+    return ((current - previous) / previous) * 100;
+};
+
+const toggleLoading = (show) => {
+    state.isLoading = show;
+    $('#loadingOverlay').toggleClass('active', show);
+    if(show) {
+        $('.summary-value').html('<div class="spinner-border spinner-border-sm text-primary"></div>');
+    }
+};
+
+/* ================= CORE LOGIC ================= */
+
+async function initPage() {
+    console.log('🚀 Initializing Report Page...');
+
+    // Lắng nghe khi bộ lọc được áp dụng
+    $(document).on("filters:applied", function (event, filterData) {
+        console.log("📥 Nhận dữ liệu filter mới:", filterData);
+        state.lastFilters = filterData;
+        loadRevenueData(filterData);
+    });
     
-    // Hiển thị loading state
-    $('#sumRevenue').html('<i class="fas fa-spinner fa-spin"></i>');
-    $('#monthlyGrowth').html('<i class="fas fa-spinner fa-spin"></i>');
-    $('#activeStores').html('<i class="fas fa-spinner fa-spin"></i>');
+    // Lấy giá trị mặc định từ DOM
+    const initialFilters = {
+        from_date: $('#startDate').val(),
+        to_date: $('#endDate').val()
+    };
+    state.lastFilters = initialFilters;
+
+    // Sử dụng Promise.allSettled để đảm bảo các tác vụ chạy độc lập
+    await Promise.allSettled([
+        renderPieChart(),
+        loadRevenueData(initialFilters)
+    ]);
+
+    $('#viewMode').off('change').on('change', function() {
+        state.currentViewMode = $(this).val();
+        loadRevenueData();
+    });
+}
+
+async function loadRevenueData(filters = null) {
+    toggleLoading(true);
+    
+    const params = filters || state.lastFilters;
+    
+    // Fallback nếu params rỗng
+    if (!params.from_date && !params.from) {
+         params.from_date = $('#startDate').val();
+         params.to_date = $('#endDate').val();
+    }
 
     try {
-        const response = await fetchSalesAnalytics(from, to);
-        const result = response.data;
+        const response = await fetchSalesAnalytics(params);
+        
+        // Axios trả về dữ liệu nằm trong response.data
+        // Do đó result ở đây chính là JSON từ Laravel trả về
+        const result = response.data; 
 
-        if (result.status === 'success') {
-            const summary = result.summary;
-            const chartData = result.chart_data;
+        console.log('📦 Dữ liệu thực tế từ server:', result);
 
-            // Update summary cards
-            updateSummaryCards(summary, chartData);
-
-            // Update charts based on view mode
-            updateCharts(chartData);
-
-            // Update table
-            updateTable(chartData);
-
-            console.log('Revenue data loaded successfully');
+        if (result && result.status === 'success') {
+            const chartData = transformData(result);
+            updateUI(result.summary, chartData);
+            console.log('✅ Cập nhật UI thành công');
         } else {
-            throw new Error('Invalid API response');
+            console.error('❌ Cấu trúc JSON không đúng hoặc status != success:', result);
+            $('.summary-value').text('Error');
         }
     } catch (error) {
-        console.error('Error loading revenue data:', error);
-        $('#sumRevenue').text('Error');
-        $('#monthlyGrowth').text('Error');
-        $('#activeStores').text('Error');
-        alert('Failed to load revenue data. Please check console (F12).');
+        console.error('❌ Lỗi khi gọi API:', error);
+        $('.summary-value').text('N/A');
+    } finally {
+        toggleLoading(false);
     }
 }
 
-function updateSummaryCards(summary, chartData) {
-    // Total Revenue
-    $('#sumRevenue').text(formatCurrency(summary.total_revenue));
-
-    // Calculate growth (compare last 2 periods)
-    let growth = 0;
-    if (chartData.length >= 2) {
-        const lastRevenue = parseFloat(chartData[chartData.length - 1].revenue);
-        const prevRevenue = parseFloat(chartData[chartData.length - 2].revenue);
-        
-        if (prevRevenue > 0) {
-            growth = ((lastRevenue - prevRevenue) / prevRevenue) * 100;
-        }
+// Chuyển đổi dữ liệu linh hoạt từ API
+function transformData(result) {
+    // Ưu tiên lấy từ chart_data
+    if (result.chart_data && Array.isArray(result.chart_data)) {
+        return result.chart_data;
     }
-
-    const growthText = growth >= 0 ? `+${growth.toFixed(1)}%` : `${growth.toFixed(1)}%`;
-    const growthClass = growth >= 0 ? 'text-success' : 'text-danger';
-    $('#monthlyGrowth').html(`<span class="${growthClass}">${growthText}</span>`);
-
-    // Active Stores (count unique stores from transactions)
-    $('#activeStores').text(summary.total_orders || 0);
-}
-
-function updateCharts(data) {
-    const processedData = processDataByViewMode(data, currentViewMode);
     
-    // Line Chart - Revenue Trend
-    renderLineChart(processedData);
-    
-    // Bar Chart - Revenue Comparison
-    renderBarChart(processedData);
-    
-    // Pie Chart - Category Distribution (load từ API)
-    renderPieChart();
-}
-
-function processDataByViewMode(data, mode) {
-    if (mode === 'daily') {
-        return data.map(item => ({
-            label: formatDate(item.date),
-            revenue: parseFloat(item.revenue),
-            orders: parseInt(item.total_orders)
+    // Nếu không có, thử lấy từ daily_data và biến đổi
+    if (result.daily_data && result.daily_data.labels) {
+        return result.daily_data.labels.map((label, i) => ({
+            date: label,
+            revenue: parseFloat(result.daily_data.revenue?.[i] || 0),
+            orders: parseInt(result.daily_data.orders?.[i] || 0)
         }));
     }
-    
-    // For weekly/monthly/yearly, we'd need to aggregate
-    // For now, return daily data
-    return data.map(item => ({
-        label: formatDate(item.date),
-        revenue: parseFloat(item.revenue),
-        orders: parseInt(item.total_orders)
-    }));
+
+    console.warn('⚠️ Không tìm thấy dữ liệu biểu đồ phù hợp trong JSON');
+    return [];
 }
 
-function renderLineChart(data) {
-    const ctx = document.getElementById('lineChart');
-    if (!ctx) return;
+function updateUI(summary, chartData) {
+    // 1. Summary Cards
+    $('#sumRevenue').text(formatCurrency(summary?.total_revenue));
+    $('#activeStores').text(summary?.active_stores || 0);
+    
+    const growth = chartData.length >= 2 
+        ? calculateGrowth(chartData[chartData.length-1].revenue, chartData[chartData.length-2].revenue) 
+        : 0;
+    
+    $('#monthlyGrowth')
+        .text(`${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`)
+        .attr('class', `summary-value ${growth >= 0 ? 'text-success' : 'text-danger'}`);
 
-    if (lineChartInstance) {
-        lineChartInstance.destroy();
-    }
+    // 2. Charts
+    renderMainCharts(chartData);
 
-    const labels = data.map(item => item.label);
-    const revenues = data.map(item => item.revenue);
+    // 3. Table
+    renderTable(chartData);
+}
 
-    // Tính toán độ rộng động của Chart dựa trên số lượng dữ liệu
-    // Nếu data > 20 điểm, mỗi điểm chiếm ít nhất 50px
-    const chartWidth = data.length > 20 ? data.length * 50 : ctx.parentElement.clientWidth;
-    ctx.style.width = chartWidth + 'px';
+/* ================= RENDERING ================= */
 
-    lineChartInstance = new Chart(ctx, {
+function renderMainCharts(data) {
+    // Xử lý dữ liệu theo viewMode
+    const processedData = processDataByViewMode(data, state.currentViewMode);
+    
+    const labels = processedData.map(d => d.date);
+    const values = processedData.map(d => d.revenue);
+
+    // Line Chart
+    if (state.instances.line) state.instances.line.destroy();
+    state.instances.line = new Chart(document.getElementById('lineChart'), {
         type: 'line',
         data: {
-            labels: labels,
+            labels,
             datasets: [{
                 label: 'Revenue',
-                data: revenues,
+                data: values,
                 borderColor: '#647acb',
-                backgroundColor: 'rgba(100, 122, 203, 0.1)',
-                borderWidth: 2,
-                tension: 0.3, // Giảm độ cong để dễ nhìn khi dữ liệu dày
                 fill: true,
-                pointRadius: data.length > 50 ? 0 : 3, // Ẩn điểm chấm nếu quá dày (>50 điểm)
-                pointHoverRadius: 6
+                backgroundColor: 'rgba(100, 122, 203, 0.1)',
+                tension: 0.4
             }]
         },
-        options: {
-            responsive: false, // Tắt responsive để cho phép cuộn ngang
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { mode: 'index', intersect: false }
-            },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: {
-                        autoSkip: true, // Tự động ẩn bớt nhãn nếu thiếu chỗ
-                        maxTicksLimit: 15, // Giới hạn tối đa 15 nhãn hiển thị trên trục X
-                        maxRotation: 0,
-                        font: { size: 11 }
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: (value) => `${(value / 1000000).toFixed(1)}M`
-                    }
-                }
-            }
-        }
+        options: { maintainAspectRatio: false }
+    });
+
+    // Bar Chart
+    if (state.instances.bar) state.instances.bar.destroy();
+    state.instances.bar = new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Revenue',
+                data: values,
+                backgroundColor: '#647acb'
+            }]
+        },
+        options: { maintainAspectRatio: false }
     });
 }
 
-function renderBarChart(data) {
-    const ctx = document.getElementById('barChart');
-    if (!ctx) return;
-    if (barChartInstance) barChartInstance.destroy();
+// Hàm gộp dữ liệu theo tuần/tháng/năm
+function processDataByViewMode(data, mode) {
+    if (mode === 'daily') return data;
 
-    // Mỗi cột tối thiểu 50px bao gồm khoảng cách
-    const minBarWidth = 50;
-    const chartWidth = Math.max(ctx.parentElement.clientWidth, data.length * minBarWidth);
-    ctx.style.width = chartWidth + 'px';
+    const grouped = {};
 
-    barChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: data.map(item => item.label),
-            datasets: [{
-                label: 'Revenue',
-                data: data.map(item => item.revenue),
-                backgroundColor: '#647acb',
-                borderRadius: 4,
-                barThickness: 25 // ✅ Cố định độ rộng cột, không cho nó bị bóp nhỏ
-            }]
-        },
-        options: {
-            responsive: false,
-            maintainAspectRatio: false,
-            scales: {
-                x: { ticks: { autoSkip: true, maxTicksLimit: 15 } },
-                y: { beginAtZero: true }
-            }
+    data.forEach(item => {
+        const date = new Date(item.date);
+        let key;
+
+        if (mode === 'weekly') {
+            // Lấy ngày đầu tuần (Thứ 2)
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1); 
+            const monday = new Date(date.setDate(diff));
+            key = monday.toISOString().split('T')[0]; // YYYY-MM-DD
+        } else if (mode === 'monthly') {
+            key = item.date.substring(0, 7); // YYYY-MM
+        } else if (mode === 'yearly') {
+            key = item.date.substring(0, 4); // YYYY
         }
+
+        if (!grouped[key]) {
+            grouped[key] = { date: key, revenue: 0, orders: 0 };
+        }
+        grouped[key].revenue += item.revenue;
+        grouped[key].orders += item.orders;
     });
+
+    return Object.values(grouped);
 }
 
 async function renderPieChart() {
-    const ctx = document.getElementById('pieChart');
-    if (!ctx) return;
-
-    if (pieChartInstance) {
-        pieChartInstance.destroy();
-    }
+    const canvas = document.getElementById('pieChart');
+    if (!canvas) return;
 
     try {
-        // 1. Load category data từ API
-        const response = await fetch('/api/products/categories');
-        const result = await response.json();
-
-        if (result.status === 'success' && result.data && result.data.categories) {
-            let categoryData = Array.isArray(result.data.categories) ? 
-                result.data.categories : 
-                Object.values(result.data.categories);
-
-            // --- BƯỚC CHỈNH SỬA CHO DỮ LIỆU LỚN ---
-            // 2. Sắp xếp dữ liệu từ lớn đến nhỏ theo delta_gmv
-            categoryData.sort((a, b) => parseFloat(b.delta_gmv || 0) - parseFloat(a.delta_gmv || 0));
-
-            // 3. Gom nhóm: Chỉ giữ lại Top 6 mục lớn nhất, còn lại gom vào "Others"
-            const MAX_ITEMS = 6;
-            let finalLabels = [];
-            let finalValues = [];
-            let othersValue = 0;
-
-            categoryData.forEach((item, index) => {
-                const val = parseFloat(item.delta_gmv || 0);
-                if (index < MAX_ITEMS) {
-                    finalLabels.push(item.Category || 'N/A');
-                    finalValues.push(val);
-                } else {
-                    othersValue += val;
-                }
-            });
-
-            if (othersValue > 0) {
-                finalLabels.push('Others');
-                finalValues.push(othersValue);
-            }
-
-            // 4. Tính toán tỷ lệ %
-            const totalRevenue = finalValues.reduce((a, b) => a + b, 0) || 1;
-            const percentages = finalValues.map(v => ((v / totalRevenue) * 100).toFixed(1));
-
-            // 5. Bảng màu (Tương ứng với số lượng labels sau khi đã gom nhóm)
-            const colors = [
-                '#647acb', '#f6ad55', '#48bb78', '#ed8936', '#9f7aea', 
-                '#f56565', '#a0aec0', '#4299e1', '#48bb78', '#ecc94b'
-            ];
-            const chartColors = colors.slice(0, finalLabels.length);
-
-            // 6. Khởi tạo Chart - Scale nhỏ cho dữ liệu lớn
-            pieChartInstance = new Chart(ctx, {
+        const res = await fetch('/api/products/categories').then(r => r.json());
+        if (res.status === 'success') {
+            const categories = Array.isArray(res.data.categories) ? res.data.categories : Object.values(res.data.categories);
+            
+            const sorted = categories.sort((a, b) => b.delta_gmv - a.delta_gmv).slice(0, 5);
+            
+            if (state.instances.pie) state.instances.pie.destroy();
+            state.instances.pie = new Chart(canvas, {
                 type: 'doughnut',
                 data: {
-                    labels: finalLabels,
+                    labels: sorted.map(c => c.Category),
                     datasets: [{
-                        data: percentages,
-                        backgroundColor: chartColors,
-                        borderWidth: 1.5, // Giảm border width
-                        borderColor: '#fff',
-                        hoverOffset: 8 // Giảm hiệu ứng hover
+                        data: sorted.map(c => c.delta_gmv),
+                        backgroundColor: ['#647acb', '#48bb78', '#f6ad55', '#f56565', '#ed8936']
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '72%', // Vòng tròn mỏng hơn để nhìn nhỏ gọn
-                    layout: {
-                        padding: 10 // Tạo khoảng trống nhỏ để biểu đồ không dính sát lề
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'bottom', // 👈 Đẩy xuống dưới để không làm phình chiều ngang
-                            labels: {
-                                boxWidth: 12,
-                                padding: 20
-                            }
-                        }
-                    }
-                }
+                options: { maintainAspectRatio: false }
             });
-
-            console.log('✅ Pie chart rendered with top categories and others grouping');
-        } else {
-            throw new Error('Invalid category data format');
         }
-    } catch (error) {
-        console.warn('⚠️ Error loading category data, using mock data:', error);
-        
-        // Fallback to mock data
-        pieChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Electronics', 'Clothing', 'Food', 'Books', 'Others'],
-                datasets: [{
-                    data: [30, 25, 20, 15, 10],
-                    backgroundColor: [
-                        '#647acb',
-                        '#f6ad55',
-                        '#48bb78',
-                        '#ed8936',
-                        '#a0aec0'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            usePointStyle: true,
-                            pointStyle: 'circle',
-                            font: { size: 12 }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => `${context.label}: ${context.parsed}%`
-                        }
-                    }
-                }
-            }
-        });
-    }
+    } catch (e) { console.warn('Pie Chart Error', e); }
 }
 
-function updateTable(data) {
-    const tbody = $('#revenueTable tbody');
-    
-    if (data.length === 0) {
-        tbody.html(`
+function renderTable(data) {
+    let html = data.map((item, index) => {
+        const growth = index > 0 ? calculateGrowth(item.revenue, data[index-1].revenue) : null;
+        const growthColor = growth >= 0 ? 'text-success' : 'text-danger';
+        
+        return `
             <tr>
-                <td colspan="3" class="text-center py-4 text-muted">
-                    <i class="fas fa-inbox me-2"></i> No data available
-                </td>
-            </tr>
-        `);
-        return;
-    }
-
-    let html = '';
-    let prevRevenue = null;
-
-    data.forEach((item, index) => {
-        const revenue = parseFloat(item.revenue);
-        let growth = 0;
-        let growthClass = '';
-        let growthIcon = '';
-
-        if (prevRevenue !== null && prevRevenue > 0) {
-            growth = ((revenue - prevRevenue) / prevRevenue) * 100;
-            growthClass = growth >= 0 ? 'text-success' : 'text-danger';
-            growthIcon = growth >= 0 ? '↑' : '↓';
-        }
-
-        html += `
-            <tr>
-                <td class="fw-semibold">${formatDate(item.date)}</td>
-                <td class="fw-semibold">${formatCurrency(revenue)}</td>
-                <td class="${growthClass}">
-                    ${prevRevenue !== null ? `${growthIcon} ${Math.abs(growth).toFixed(1)}%` : 'N/A'}
-                </td>
+                <td class="fw-bold">${item.date}</td>
+                <td>${formatCurrency(item.revenue)}</td>
+                <td class="${growthColor}">${growth !== null ? (growth >= 0 ? '↑' : '↓') + Math.abs(growth).toFixed(1) + '%' : '--'}</td>
             </tr>
         `;
-
-        prevRevenue = revenue;
-    });
-
-    tbody.html(html);
-}
-
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND'
-    }).format(amount || 0);
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric'
-    });
-}
-
-async function downloadCSV() {
-    const btn = $('#downloadBtn');
-    const originalHtml = btn.html();
+    }).reverse().join(''); // Đảo ngược để thấy ngày mới nhất lên đầu
     
-    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Downloading...');
-
-    try {
-        // Get current filter dates if any
-        const response = await fetchSalesAnalytics();
-        const result = response.data;
-
-        if (result.status === 'success') {
-            const data = result.chart_data;
-
-            // Create CSV content
-            let csv = 'Date,Revenue,Total Orders\n';
-
-            data.forEach(item => {
-                csv += `${item.date},${item.revenue},${item.total_orders}\n`;
-            });
-
-            // Download file
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `revenue_report_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            console.log('✅ CSV downloaded successfully');
-        }
-    } catch (error) {
-        console.error('❌ Error downloading CSV:', error);
-        alert('Failed to download CSV. Please check console (F12).');
-    } finally {
-        btn.prop('disabled', false).html(originalHtml);
-    }
+    $('#revenueTable tbody').html(html || '<tr><td colspan="3" class="text-center">No data</td></tr>');
 }
 
-// Initialize
-$(document).ready(function() {
-    console.log('🚀 Report Revenues page initialized');
-
-    // Load initial data (last 30 days by default)
-    loadRevenueData();
-
-    // View mode selector
-    $('#viewMode').on('change', function() {
-        currentViewMode = $(this).val();
-        loadRevenueData();
-    });
-
-    // Download button
-    $('#downloadBtn').on('click', function(e) {
-        e.preventDefault();
-        downloadCSV();
-    });
-});
+$(document).ready(initPage);

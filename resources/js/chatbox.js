@@ -2,6 +2,11 @@
 window.toggleChatbox = function() {
     const chatbox = document.getElementById('chatbox-window');
     chatbox.style.display = (chatbox.style.display === 'flex') ? 'none' : 'flex';
+
+    const chatboxBody = document.getElementById('chatbox-body');
+    if (!isVisible && chatboxBody && chatboxBody.children.length === 0) {
+        appendMessage('bot', 'Chào mừng đến với Modalab Chat! Tôi có thể giúp gì cho bạn hôm nay?');
+    }
 }
 //sử lý sự kiện nút gửi tin nhắn
 document.addEventListener('DOMContentLoaded', function() {
@@ -34,11 +39,7 @@ async function sendChatMessage() {
     if (!csrfToken) {
         console.error("Lỗi: Không tìm thấy thẻ meta CSRF-TOKEN. Vui lòng thêm vào layout.");
     }
-    //Tự động hiển thị lời chào khi mở chatbox lần đầu
-    const chatboxBody = document.getElementById('chatbox-body');
-    if (chatboxBody.children.length === 0) {
-        appendMessage('bot', 'Chào mừng đến với Modalab Chat! Tôi có thể giúp gì cho bạn hôm nay?');
-    }
+
 
     // 1. Hiển thị tin nhắn người dùng
     appendMessage('user', question);

@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class StoreController extends Controller
 {
-/**
+    /**
      * 1. Lấy danh sách tất cả cửa hàng (Kèm Doanh số & Số nhân viên)
      * GET /api/stores
      */
@@ -24,7 +25,7 @@ class StoreController extends Controller
 
         // Sử dụng Query Builder + Raw SQL Subquery
         // Chuẩn bị điều kiện ngày nếu có
-        $pdo = \DB::getPdo();
+        $pdo = DB::getPdo();
         $dateSql = '';
         if ($fromDate) {
             $dateSql .= ' AND t.DATE >= ' . $pdo->quote($fromDate);
@@ -39,13 +40,15 @@ class StoreController extends Controller
             $cats = array_values(array_filter(array_map('trim', explode(',', $categoryParam))));
             if (!empty($cats)) {
                 // Quote each category value to avoid SQL injection
-                $quoted = array_map(function($c) { return \DB::getPdo()->quote($c); }, $cats);
+                $quoted = array_map(function ($c) {
+                    return DB::getPdo()->quote($c);
+                }, $cats);
                 $inList = implode(',', $quoted);
                 $catSelectedSql = "(SELECT COALESCE(SUM(t.LineTotal), 0) FROM transactions t JOIN products p ON t.ProductID = p.ProductID WHERE t.StoreID = stores.StoreID AND p.Category IN ({$inList}) {$dateSql}) as catSelected";
             }
         }
 
-        $storesQuery = \DB::table('stores')
+        $storesQuery = DB::table('stores')
             ->select(
                 'stores.StoreID',
                 'stores.StoreName',
@@ -56,14 +59,14 @@ class StoreController extends Controller
                 'stores.Latitude',
                 'stores.Longitude',
                 // Subquery 1: Tính tổng tiền trực tiếp (có thể lọc theo ngày)
-                \DB::raw('(SELECT COALESCE(SUM(LineTotal), 0) FROM transactions WHERE transactions.StoreID = stores.StoreID' .
-                           ($fromDate ? ' AND DATE >= ' . $pdo->quote($fromDate) : '') .
-                           ($toDate ? ' AND DATE <= ' . $pdo->quote($toDate) : '') .
-                           ') as revenue'),
+                DB::raw('(SELECT COALESCE(SUM(LineTotal), 0) FROM transactions WHERE transactions.StoreID = stores.StoreID' .
+                    ($fromDate ? ' AND DATE >= ' . $pdo->quote($fromDate) : '') .
+                    ($toDate ? ' AND DATE <= ' . $pdo->quote($toDate) : '') .
+                    ') as revenue'),
                 // Subquery 2: Đếm nhân viên trực tiếp
-                \DB::raw('(SELECT COUNT(*) FROM employees WHERE employees.StoreID = stores.StoreID) as total_employees'),
+                DB::raw('(SELECT COUNT(*) FROM employees WHERE employees.StoreID = stores.StoreID) as total_employees'),
                 // Subquery 3: Doanh thu cho các category được chọn (catSelected)
-                \DB::raw($catSelectedSql)
+                DB::raw($catSelectedSql)
             );
 
         // Áp dụng filter: stores list
@@ -78,12 +81,12 @@ class StoreController extends Controller
         if ($categoryParam) {
             $cats = array_values(array_filter(array_map('trim', explode(',', $categoryParam))));
             if (!empty($cats)) {
-                $storesQuery->whereExists(function($q) use ($cats, $fromDate, $toDate) {
-                    $q->select(\DB::raw(1))
-                      ->from('transactions')
-                      ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
-                      ->whereRaw('transactions.StoreID = stores.StoreID')
-                      ->whereIn('products.Category', $cats);
+                $storesQuery->whereExists(function ($q) use ($cats, $fromDate, $toDate) {
+                    $q->select(DB::raw(1))
+                        ->from('transactions')
+                        ->join('products', 'transactions.ProductID', '=', 'products.ProductID')
+                        ->whereRaw('transactions.StoreID = stores.StoreID')
+                        ->whereIn('products.Category', $cats);
 
                     if ($fromDate) {
                         $q->whereDate('transactions.DATE', '>=', $fromDate);
@@ -115,7 +118,7 @@ class StoreController extends Controller
             'status' => 'success',
 
             // 1. Trả về mảng dữ liệu thuần (để Table hiển thị được ngay)
-            'data' => $stores->items(), 
+            'data' => $stores->items(),
 
             // 2. Gửi kèm thông tin phân trang (để bạn làm nút Next/Prev)
             'pagination' => [
@@ -135,8 +138,8 @@ class StoreController extends Controller
     public function show($id)
     {
         $store = Store::withSum('transactions', 'LineTotal')
-                      ->withCount('employees')
-                      ->find($id);
+            ->withCount('employees')
+            ->find($id);
 
         if (!$store) {
             return response()->json(['status' => 'error', 'message' => 'Không tìm thấy cửa hàng'], 404);
@@ -163,7 +166,7 @@ class StoreController extends Controller
         $validator = Validator::make($request->all(), [
             'StoreName' => 'string|max:255',
             'City'      => 'string|max:255',
-            'Country'   => 'string|max:255', 
+            'Country'   => 'string|max:255',
             'ZipCode'   => 'string|max:255',
             'NumberOfEmployee' => 'integer|min:0'
         ]);
@@ -196,12 +199,12 @@ class StoreController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'store_name' => $store->StoreName, 
+            'store_name' => $store->StoreName,
             'count' => $store->employees->count(),
             'data' => $store->employees
         ]);
     }
-    
+
     /**
      * 5. Trả về danh sách cửa hàng thuần (dùng cho dropdown)
      * GET /api/stores
@@ -215,5 +218,4 @@ class StoreController extends Controller
             'data' => $stores
         ]);
     }
-    
 }

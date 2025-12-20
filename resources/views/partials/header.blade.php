@@ -49,10 +49,11 @@
                 <i class="fa-solid fa-calendar-days date-icon"></i>
             </button>
             {{-- <input type="text" class="date-input" id="startDateDisplay" readonly> --}}
-            <input type="date" id="startDate" value="2023-01-01">
+            <input type="date" id="startDate" value="2024-01-12">
             <span class="date-separator fw-bold text-dark">To</span>
-            <input type="date" id="endDate" value="2025-01-01">
-            {{-- <input type="text" class="date-input" id="endDateDisplay" readonly> --}}
+            <input type="date" id="endDate" value="2025-01-01">            <button type="button" class="btn btn-sm btn-primary ms-2 rounded-pill px-3" id="btnApplyHeaderDate">
+                Apply
+            </button>            {{-- <input type="text" class="date-input" id="endDateDisplay" readonly> --}}
         </div>
     </div>
 

@@ -55,5 +55,15 @@
     <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
 
     @stack('scripts')
+    <script>
+        // Kiểm tra xem chatbox có lỗi không nhưng không để nó dừng script khác
+        try {
+            if (typeof initChat === 'function') {
+                initChat();
+            }
+        } catch (e) {
+            console.warn("Chatbox error but page still running:", e);
+        }
+    </script>
 </body>
 </html>

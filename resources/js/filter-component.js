@@ -3,11 +3,11 @@
 /* KHỞI TẠO COMPONENT FILTER 
 /* ======================================================= */
 function initFilterComponent() {
-    console.log("Khởi tạo Filter component...");
+  console.log("Khởi tạo Filter component...");
   const $filterGroups = $(".filter-group");
+  
   if (!$filterGroups.length) {
-    console.warn("Không tìm thấy .filter-group để khởi tạo.");
-    return;
+    console.log("ℹ️ Không có .filter-group nào, nhưng vẫn khởi tạo các sự kiện chung (Date, Apply button).");
   }
 
   // --- Helper 1: Cập nhật text hiển thị ---
@@ -285,6 +285,12 @@ function initFilterComponent() {
 
   // Auto-apply when date inputs change (no need to click Apply)
   $(document).on('change', '#startDate, #endDate', function () {
+    $(document).trigger('filters:applied', [collectFilters()]);
+  });
+
+  // Handle Apply button in Header
+  $(document).on('click', '#btnApplyHeaderDate', function (e) {
+    e.preventDefault();
     $(document).trigger('filters:applied', [collectFilters()]);
   });
 

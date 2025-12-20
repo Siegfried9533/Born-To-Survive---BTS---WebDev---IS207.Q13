@@ -14,10 +14,10 @@ class SalesController extends Controller
         // Biểu thức tính GMV
         $amountExprSql = 'COALESCE(transactions.LineTotal, transactions.Quantity * transactions.UnitPrice)';
 
-        // Lấy ngày từ request, mặc định 30 ngày gần nhất
+        // Lấy ngày từ request, mặc định 2 năm gần nhất để bao phủ dữ liệu cũ
         $fromDate = $request->input('from') 
             ? Carbon::parse($request->input('from'))->startOfDay() 
-            : Carbon::now()->subDays(30)->startOfDay();
+            : Carbon::now()->subYears(2)->startOfDay();
         $toDate = $request->input('to') 
             ? Carbon::parse($request->input('to'))->endOfDay() 
             : Carbon::now()->endOfDay();
@@ -37,6 +37,21 @@ class SalesController extends Controller
         $totalRevenue = $dailyData->sum('revenue');
         $totalOrders = $dailyData->sum('orders');
         $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+
+        // Calculate Active Stores
+        $activeStores = DB::table('transactions')
+            ->whereBetween('transactions.DATE', [$fromDate, $toDate])
+            ->distinct('StoreID')
+            ->count('StoreID');
+
+        // Prepare chart_data for frontend
+        $chartData = $dailyData->map(function($item) {
+            return [
+                'date' => $item->date,
+                'revenue' => (float) $item->revenue,
+                'total_orders' => (int) $item->orders
+            ];
+        });
 
         // ============================================================
         // 2. GROWTH YoY - So sánh với cùng kỳ năm trước
@@ -186,9 +201,12 @@ class SalesController extends Controller
             'summary' => [
                 'total_revenue' => (float) $totalRevenue,
                 'total_orders' => (int) $totalOrders,
+                'active_stores' => (int) $activeStores,
                 'avg_order_value' => round($avgOrderValue, 0),
                 'growth_yoy' => $growthYoY,
             ],
+            // Chart Data for Frontend
+            'chart_data' => $chartData,
             // Daily Data cho popup charts
             'daily_data' => [
                 'labels' => $dailyData->pluck('date')->map(fn($d) => Carbon::parse($d)->format('d/m'))->toArray(),

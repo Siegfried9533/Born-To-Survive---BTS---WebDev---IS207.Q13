@@ -29,8 +29,29 @@ export const searchCustomers = (keyword) => {
     return apiClient.get(`/customers/search?keyword=${keyword}`);
 };
 
-export const fetchSalesAnalytics = (from, to) => {
-    return apiClient.get(`/analytics/sales`, { params: { from, to } });
+export const fetchSalesAnalytics = (arg1, arg2) => {//dùng cho cả 2 kiểu gọi hàm
+    let params = {};
+
+    // TRƯỜNG HỢP 1: dùng kiểu cũ: fetchSalesAnalytics(from, to)
+    // Kiểm tra nếu arg1 là String (ngày tháng) hoặc null
+    if (typeof arg1 === 'string' || arg1 === null || typeof arg2 === 'string') {
+        params = { 
+            from: arg1, 
+            to: arg2 
+        };
+    } 
+    // TRƯỜNG HỢP 2: kiểu mới: fetchSalesAnalytics({ categories, stores, ... })
+    // Kiểm tra nếu arg1 là một Object
+    else if (typeof arg1 === 'object' && arg1 !== null) {
+        params = arg1;
+        
+        // Bonus: Đồng bộ tên biến nếu Backend của bạn yêu cầu 'from'/'to' 
+        // thay vì 'from_date'/'to_date' của bộ lọc
+        if (params.from_date) params.from = params.from_date;
+        if (params.to_date) params.to = params.to_date;
+    }
+
+    return apiClient.get(`/analytics/sales`, { params });
 };
 
 // --- NHÓM DASHBOARD ---

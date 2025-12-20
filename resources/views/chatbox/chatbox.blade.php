@@ -82,6 +82,7 @@
     padding: 8px;
     margin-top: 5px;
 }
+
 </style>
 
 <div id="chatbox-icon" onclick="toggleChatbox()">
