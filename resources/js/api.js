@@ -1,8 +1,8 @@
 import axios from 'axios';
-
+const baseUrl = window.Laravel && window.Laravel.baseUrl ? window.Laravel.baseUrl : window.location.origin;
 // 1. Cấu hình Axios
 const apiClient = axios.create({
-    baseURL: '/api',
+    baseURL: `${baseUrl}/api`,
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

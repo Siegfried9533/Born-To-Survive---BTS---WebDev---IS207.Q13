@@ -65,7 +65,8 @@ async function fetchSalesData() {
     showLoading();
 
     try {
-        const response = await axios.get('/api/analytics/sales', { params: filters });
+        const baseUrl = window.Laravel && window.Laravel.baseUrl ? window.Laravel.baseUrl : window.location.origin;
+        const response = await axios.get(`${baseUrl}/api/analytics/sales`, { params: filters });
         const data = response.data;
 
         if (!data || data.status !== 'success') {
@@ -507,15 +508,108 @@ function initDownloadButton() {
 }
 
 /* ======================================================= */
+/* PRINT / EXPORT VIEW                                       */
+/* ======================================================= */
+function initPrintButton() {
+    const buttons = document.querySelectorAll('.btn-download-report, #btn-download-report');
+    if (!buttons || buttons.length === 0) return;
+
+    buttons.forEach((printBtn) => {
+        printBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // Try to find the main report container. Prefer `.content-report-sale`.
+            const possibleSelectors = ['.content-report-sale', '#content-report-sale', 'section.content-report-sale', '.report', '#report', '.reportContent', '#reportContent', '.printArea', '#printArea', 'main'];
+            let printEl = null;
+            for (const sel of possibleSelectors) {
+                const el = document.querySelector(sel);
+                if (el) { printEl = el; break; }
+            }
+            if (!printEl) printEl = document.body;
+
+            // Open a new window and write the report HTML, including current stylesheets
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                // Fallback: just call browser print
+                window.print();
+                return;
+            }
+
+            const headHtml = Array.from(document.querySelectorAll('head link[rel="stylesheet"], head style'))
+                .map(node => node.outerHTML)
+                .join('\n');
+
+            const title = document.title || 'Report';
+
+            // Clone the print element and strip header/sidebar elements to ensure only data content prints
+            const clone = printEl.cloneNode(true);
+            const removeSelectors = [
+                'header', 'nav', '.sidebar', '.aside', '.main-sidebar', '.navbar', '.topbar', '#sidebar', '#header', '.breadcrumb', '.no-print',
+                // Filters area
+                '.filters', '#filters', '.filter-area', '.filter-panel', '.overview-filter', 'filter-bar',
+                // Chat / floating icons
+                '.chatbox', '#chatbox', '.chat-icon', '.chat-toggle', '.floating-chat', '.msger', '.chat-widget'
+            ];
+            removeSelectors.forEach(sel => {
+                try {
+                    clone.querySelectorAll(sel).forEach(n => n.remove());
+                } catch (e) {
+                    // ignore invalid selectors
+                }
+            });
+            const bodyHtml = clone.outerHTML;
+
+            const content = `
+                <html>
+                    <head>
+                        <title>${title}</title>
+                        ${headHtml}
+                        <style>
+                            /* Improve print layout and explicitly hide header/sidebar */
+                            @media print {
+                                body { -webkit-print-color-adjust: exact; }
+                                header, nav, .sidebar, .aside, .main-sidebar, .navbar, .topbar, #sidebar, #header { display: none !important; }
+                                .no-print { display: none !important; }
+                            }
+                            body { margin: 20px; }
+                        </style>
+                    </head>
+                    <body>
+                        ${bodyHtml}
+                    </body>
+                </html>
+            `;
+
+            printWindow.document.open();
+            printWindow.document.write(content);
+            printWindow.document.close();
+
+            // Wait a bit for styles/images to load, then print
+            setTimeout(() => {
+                try {
+                    printWindow.focus();
+                    printWindow.print();
+                } catch (err) {
+                    console.error('Print failed:', err);
+                    printWindow.close();
+                }
+            }, 500);
+        });
+    });
+}
+
+/* ======================================================= */
 /* DOCUMENT READY                                           */
 /* ======================================================= */
 $(document).ready(function() {
     initFilters();
     initModalEvents();
     initDownloadButton();
+    initPrintButton();
     fetchSalesData(); // Load data on page load
 });
 
 // Chart.js defaults
 Chart.defaults.font.family = "'Inter', 'Helvetica', 'Arial', sans-serif";
 Chart.defaults.color = '#495057';
+

@@ -16,5 +16,8 @@
         </div>
 
         <button class="btn-apply-filters" id="applyOverviewFilters">Apply Filters</button>
+        <button class="btn-download-report" id="downloadOverviewReport">
+            <i class="fa-solid fa-download"></i> Download Report
+        </button>
     </div>
 </section>

@@ -761,6 +761,29 @@ body {
 .btn-apply-filters:hover {
   background-color: var(--primary-hover);
 }
+.btn-download-report {
+  background-color: var(--white);
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 15px;
+  align-self: flex-end;
+  transition: background-color 0.2s, color 0.2s;
+  padding: 0 20px;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.btn-download-report i {
+  margin-right: 8px;
+}
+.btn-download-report:hover {
+  background-color: var(--primary);
+  color: var(--white);
+}
 
 /* ===================== APP-FOOTER ===================== */
 #app-footer {

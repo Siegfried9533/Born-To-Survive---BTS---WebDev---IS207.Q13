@@ -22,8 +22,14 @@
         <button class="btn-apply-filters" id="applySalesFilters">
             <i class="fas fa-filter me-2"></i>Apply Filters
         </button>
+        <button class="btn-download-report" id="downloadSalesReport">
+            <i class="fa-solid fa-download"></i> Download Report
+        </button>
     </div>
 </section>
+<section class="content-report-sale">
+    
+{{-- Sales Overview Section --}}
 
 <section class="container-fluid-dashboard px-4 pb-5">
     <div class="card section-card shadow-sm">
@@ -261,6 +267,8 @@
         </div>
     </div>
 </div>
+
+</section>
 
 @endsection
 

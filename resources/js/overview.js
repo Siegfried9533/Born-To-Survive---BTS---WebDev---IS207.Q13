@@ -367,7 +367,45 @@ $(document).on('click', '#apply-filter-btn', function (e) {
 $(document).ready(function () {
     initFilters();
     initOverviewChartsFromApi();
+    initOverviewPrintButton();
 });
+
+/* ======================================================= */
+/* OVERVIEW: PRINT MAIN CONTENT ONLY                        */
+/* ======================================================= */
+function initOverviewPrintButton() {
+    const btn = document.getElementById('downloadOverviewReport') || document.querySelector('.btn-download-report');
+    if (!btn) return;
+
+    btn.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        // Select only the page content wrapper
+        const pageContent = document.getElementById('page-content');
+        if (!pageContent) return;
+        const clone = pageContent.cloneNode(true);
+
+        // Remove any remaining non-content elements inside page-content (e.g., filters, chat icons)
+        const removeSelectors = ['.filter-bar', '.filter-group', '.chatbox', '.chat-widget', '.btn-apply-filters', '.btn-download-report', '.filter-display-box', '.filter-dropdown'];
+        removeSelectors.forEach(sel => {
+            try { clone.querySelectorAll(sel).forEach(n => n.remove()); } catch (err) {}
+        });
+
+        // Collect styles
+        const headHtml = Array.from(document.querySelectorAll('head link[rel="stylesheet"], head style'))
+            .map(n => n.outerHTML).join('\n');
+
+        const title = document.title || 'Overview Report';
+        const content = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>${headHtml}<style>@media print{body{-webkit-print-color-adjust:exact}}body{margin:20px}</style></head><body>${clone.outerHTML}</body></html>`;
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) { window.print(); return; }
+        printWindow.document.open();
+        printWindow.document.write(content);
+        printWindow.document.close();
+        setTimeout(() => { try { printWindow.focus(); printWindow.print(); } catch (err) { printWindow.close(); } }, 500);
+    });
+}
 
 function initFilters() {
     // Litepicker chọn 1 ngày (single mode)
