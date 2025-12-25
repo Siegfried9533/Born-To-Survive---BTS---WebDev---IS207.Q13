@@ -80,7 +80,7 @@ async function initOverviewChartsFromApi(filterParams = {}) {
         }
 
         if ($('#total-revenue').length) {
-            $('#total-revenue').text(`€${data.total_revenue.toLocaleString()}`);
+            $('#total-revenue').text(`$${data.total_revenue.toLocaleString()}`);
         }
 
     } catch (error) {
@@ -187,7 +187,7 @@ function renderGMVEvolution(data) {
                     callbacks: {
                         label: function (context) {
                             if (context.dataset.label === "GMV") {
-                                return `GMV: €${Number(context.parsed.y).toLocaleString('fr-FR')}`;
+                                return `GMV: $${Number(context.parsed.y).toLocaleString('fr-FR')}`;
                             } else {
                                 return `Growth: ${context.parsed.y}%`;
                             }
@@ -198,7 +198,7 @@ function renderGMVEvolution(data) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { callback: (v) => `€${(v / 1000).toFixed(0)}k` }, // Rút gọn số liệu trục Y
+                    ticks: { callback: (v) => `$${(v / 1000).toFixed(0)}k` }, // Rút gọn số liệu trục Y
                     grid: { color: "#e5e7eb" },
                 },
                 y1: {
@@ -262,7 +262,7 @@ function renderModalabSynthesis(data) {
                         label: (ctx) => {
                             const growth = ctx.raw;
                             const gmvVal = gmvs[ctx.dataIndex] ?? null;
-                            const gmvText = gmvVal !== null ? ` | GMV: ${Number(gmvVal).toLocaleString('fr-FR')} €` : "";
+                            const gmvText = gmvVal !== null ? ` | GMV: ${Number(gmvVal).toLocaleString('fr-FR')} $` : "";
                             return `Growth: ${growth}%${gmvText}`;
                         }
                     }
@@ -336,7 +336,7 @@ function renderSalesChannels(data) {
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = ((value / total) * 100).toFixed(1);
                             const gmvVal = gmvs[context.dataIndex] ?? null;
-                            const gmvText = gmvVal !== null ? ` | GMV: ${Number(gmvVal).toLocaleString('fr-FR')} €` : "";
+                            const gmvText = gmvVal !== null ? ` | GMV: ${Number(gmvVal).toLocaleString('fr-FR')} $` : "";
                             return `${context.label}: ${percentage}%${gmvText}`;
                         },
                     },

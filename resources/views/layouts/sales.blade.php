@@ -12,7 +12,7 @@
     
     <link rel="shortcut icon" href="/assets/images/Favicon.png" type="image/x-icon">
     
-    @vite(['resources/css/style.css', 'resources/js/main.js'])
+    @vite(['resources/css/style.css', 'resources/js/main.js','resources/js/dark-mode.js'])
     
     @stack('styles')
     

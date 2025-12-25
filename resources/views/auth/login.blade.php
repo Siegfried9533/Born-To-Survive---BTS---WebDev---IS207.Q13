@@ -64,9 +64,9 @@
                         </a>
                     </nav>
 
-                    <div class="nav-right">
+                    {{-- <div class="nav-right">
                         <a href="{{ route('auth.signup') }}" class="btn btn-signup">SIGN UP</a>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
         </header>
@@ -102,20 +102,20 @@
                             <a href="{{ route('auth.forgot-password') }}" class="link-page text-decoration-none d-block mb-2 fs-small">
                                 Forgot password?
                             </a>
-                            <span class="fs-small">
+                            {{-- <span class="fs-small">
                                 Don't have account?
                                 <a href="{{ route('auth.signup') }}" class="link-page fw-medium text-decoration-none">Sign up</a>
-                            </span>
+                            </span> --}}
                         </div>
 
-                        <div class="divider my-3">Or</div>
+                        {{-- <div class="divider my-3">Or</div> --}}
 
-                        <div class="text-center">
+                        {{-- <div class="text-center">
                             <a class="btn btn-outline-social w-100 d-inline-flex align-items-center justify-content-center" href="#">
                                 <img src="https://www.svgrepo.com/show/355037/google.svg" width="20" class="me-2" alt="Google" />
                                 Sign in with Google
                             </a>
-                        </div>
+                        </div> --}}
                     </div>
                 </div>
 

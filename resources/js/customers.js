@@ -187,9 +187,9 @@ function getRankClass(rank) {
 }
 
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat('en-EN', {
         style: 'currency',
-        currency: 'VND'
+        currency: 'USD'
     }).format(amount || 0);
 }
 

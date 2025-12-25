@@ -17,7 +17,7 @@
 </div>
 
 {{-- Filter Bar --}}
-<section class="container-fluid-dashboard px-4 pb-3">
+<section class="container-fluid-dashboard px-4 pb-3" style="padding-top: 15px">
     <div class="filter-bar d-flex align-items-center gap-3 flex-wrap">
         <button class="btn-apply-filters" id="applySalesFilters">
             <i class="fas fa-filter me-2"></i>Apply Filters

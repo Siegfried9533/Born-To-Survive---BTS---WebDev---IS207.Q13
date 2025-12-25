@@ -10,7 +10,7 @@
 <section class="container-fluid-dashboard px-4 pb-5">
     <div class="row mb-4">
         <div class="col-12" id="filter-wrapper">
-            <div id="filter-container" class="card p-3 shadow-sm"></div>
+            {{-- <div id="filter-container" class="card p-3 shadow-sm"></div> --}}
         </div>
     </div>
 
@@ -24,7 +24,7 @@
                     <option value="monthly">Monthly</option>
                     <option value="yearly">Yearly</option>
                 </select>
-                <button id="downloadBtn" class="btn btn-sm btn-primary d-flex align-items-center gap-2">
+                <button id="downloadBtn" class="btn btn-sm btn-primary d-flex align-items-center gap-2" onclick="exportRevenueReport();">
                     <i class="fas fa-download"></i>
                     <span>Download</span>
                 </button>

@@ -60,7 +60,7 @@ function initTopProducts() {
           name: name,
           deltaGMV: `${totalSold} units`,
           vnGrowth: "-",
-          instore: `${revenue.toLocaleString('fr-FR')} €`,
+          instore: `${revenue.toLocaleString('fr-FR')} $`,
           deltaNum: deltaNum,
           instoreNum: instoreNum,
         });
@@ -93,7 +93,7 @@ function initTopProducts() {
                     <td class="text-primary fw-bold">Total</td>
                     <td class="text-primary fw-bold">All Products</td>
                     <td class="text-end pe-4"><div class="value-main">${totalDelta.toFixed(2)} pts</div></td>
-                    <td class="text-end pe-4"><div class="value-main">${totalInstore.toLocaleString("fr-FR")} €</div></td>
+                    <td class="text-end pe-4"><div class="value-main">${totalInstore.toLocaleString("fr-FR")} $</div></td>
                 </tr>
             `);
 
@@ -207,7 +207,7 @@ function initTopProducts() {
       let csv = "Rank,ID,Model,Delta GMV,VN Growth,InStore GMV\n";
       csv += `,Total,All Products,${totalDelta.toFixed(
         2
-      )} pts,,${totalInstore.toLocaleString("fr-FR")} €\n`;
+      )} pts,,${totalInstore.toLocaleString("fr-FR")} $\n`;
       data.forEach(
         (r) =>
           (csv += `${r.rank},${r.id},${r.name},${r.deltaGMV},${r.vnGrowth},${r.instore}\n`)

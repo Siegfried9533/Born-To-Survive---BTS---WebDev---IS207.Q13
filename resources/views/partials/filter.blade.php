@@ -19,7 +19,7 @@
     <div class="filter-dropdown">
     </div>
 </div>
-<div class="filter-group">
+{{-- <div class="filter-group">
     <label class="filter-label">
         <i class="fa-solid fa-arrow-down-wide-short"></i> Sort by:
     </label>
@@ -40,6 +40,6 @@
             <label for="sort_vol">Volumn</label>
         </div>
     </div>
-</div>
+</div> --}}
 
 <button class="btn-apply-filters">Apply Filters</button>

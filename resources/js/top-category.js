@@ -52,7 +52,7 @@ function initTopCategory() {
           instoreNum = Number(it.instore_gmv || it.instore || it.revenue || it.value || 0) || 0;
           deltaDisplay = (deltaNum > 0 ? deltaNum.toLocaleString('en-US') : '0') + ' pts';
           vnGrowth = it.product_count ? `${it.product_count} products` : (it.growth || '-');
-          instoreDisplay = (instoreNum > 0 ? instoreNum.toLocaleString('fr-FR') : '0') + ' €';
+          instoreDisplay = (instoreNum > 0 ? instoreNum.toLocaleString('fr-FR') : '0') + ' $';
         } else {
           id = '';
           name = '';
@@ -108,7 +108,7 @@ function initTopCategory() {
                     )}K pts</div></td>
                     <td class="text-end pe-4"><div class="value-main">${totalInstore.toLocaleString(
                       "fr-FR"
-                    )} €</div></td>
+                    )} </div></td>
                 </tr>
             `);
 
@@ -168,7 +168,7 @@ function initTopCategory() {
         let csv = "Rank,ID,Family,Delta GMV,VN Growth,InStore GMV\n";
         csv += `,Total,All Categories,${totalDelta.toFixed(
           1
-        )}K pts,,${totalInstore.toLocaleString("fr-FR")} €\n`;
+        )}K pts,,${totalInstore.toLocaleString("fr-FR")} $\n`;
         data.forEach(
           (r) =>
             (csv += `${r.rank},${r.id},${r.name},${r.deltaGMV},${r.vnGrowth},${r.instore}\n`)

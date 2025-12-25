@@ -53,7 +53,7 @@ function initTopSubCategory() {
           name: name,
           deltaGMV: (deltaNum > 0 ? deltaNum.toLocaleString('en-US') : '0') + ' pts',
           vnGrowth: it.product_count ? `${it.product_count} products` : '-',
-          instore: (instoreNum > 0 ? instoreNum.toLocaleString('fr-FR') : '0') + ' €',
+          instore: (instoreNum > 0 ? instoreNum.toLocaleString('fr-FR') : '0') + ' $',
           deltaNum: deltaNum,
           instoreNum: instoreNum
         });
@@ -81,7 +81,7 @@ function initTopSubCategory() {
         <td class="text-primary fw-bold">Total</td>
         <td class="text-primary fw-bold">All SubCategories</td>
         <td class="text-end pe-4"><div class="value-main">${totalDelta.toFixed(1)} pts</div></td>
-        <td class="text-end pe-4"><div class="value-main">${totalInstore.toLocaleString('fr-FR')} €</div></td>
+        <td class="text-end pe-4"><div class="value-main">${totalInstore.toLocaleString('fr-FR')} $</div></td>
       </tr>
     `);
 
@@ -116,7 +116,7 @@ function initTopSubCategory() {
   // Download
   $(document).off('click', '#downloadSubCategoryBtn').on('click', '#downloadSubCategoryBtn', function () {
     let csv = 'Rank,ID,Family,Delta GMV,VN Growth,InStore GMV\n';
-    csv += `,Total,All SubCategories,${totalDelta.toFixed(1)} pts,,${totalInstore.toLocaleString('fr-FR')} €\n`;
+    csv += `,Total,All SubCategories,${totalDelta.toFixed(1)} pts,,${totalInstore.toLocaleString('fr-FR')} $\n`;
     data.forEach((r) => csv += `${r.rank},${r.id},${r.name},${r.deltaGMV},${r.vnGrowth},${r.instore}\n`);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

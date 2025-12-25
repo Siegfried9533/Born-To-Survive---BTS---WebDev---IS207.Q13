@@ -57,7 +57,7 @@
         </a>
         <ul class="submenu">
             <li class="submenu-item"><a href="{{ route('top-stores') }}">Top Stores</a></li>
-            <li class="submenu-item"><a href="#">Track Inventory</a></li>
+            {{-- <li class="submenu-item"><a href="#">Track Inventory</a></li> --}}
         </ul>
     </li>
 
@@ -71,7 +71,7 @@
         </a>
         <ul class="submenu">
             <li class="submenu-item"><a href="{{ route('reports.revenues')}}">Revenues</a></li>
-            <li class="submenu-item"><a href="#">Orders</a></li>
+            {{-- <li class="submenu-item"><a href="#">Orders</a></li> --}}
             <li class="submenu-item"><a href="{{ route('reports.sales')}}">Sales</a></li>
             <li class="submenu-item"><a href="{{ route('reports.customers')}}">Customers</a></li>
             <li class="submenu-item"><a href="#">Prediction</a></li>

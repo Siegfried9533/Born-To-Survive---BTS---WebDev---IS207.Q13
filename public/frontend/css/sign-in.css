@@ -215,11 +215,11 @@
     overflow: hidden;
     background: var(--primary);
     color: var(--white);
-    border-bottom-left-radius: 28px;
+    /* border-bottom-left-radius: 28px; */
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 500px;
+    height: max-height;
 }
 
 /* Lớp sóng tĩnh thứ nhất */

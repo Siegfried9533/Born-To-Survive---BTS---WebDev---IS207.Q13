@@ -202,10 +202,10 @@ function initTopStores() {
             <td>${d.lat.toFixed(6)}</td>
             <td>${d.lng.toFixed(6)}</td>
             <td class="text-end pe-4">
-                <div class="value-main text-secondary small">${d.catSelected.toLocaleString("vi-VN")} ₫</div>
+                <div class="value-main text-secondary small">${d.catSelected.toLocaleString("en-EN")} $</div>
             </td>
             <td class="text-end pe-4">
-                <div class="value-main text-success fw-bold">${d.allCat.toLocaleString("vi-VN")} ₫</div>
+                <div class="value-main text-success fw-bold">${d.allCat.toLocaleString("en-EN")} $</div>
             </td>
         </tr>
       `;

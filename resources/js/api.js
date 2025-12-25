@@ -65,6 +65,53 @@ export const fetchAllCustomersForExport = () => {
     return apiClient.get(`/analytics/customers?limit=all`);
 };
 
+// Hàm download CSV từ API export (dùng axios với responseType: 'blob')
+export const downloadExportCSV = async (type) => {
+    try {
+        const response = await apiClient.get(`/export/${type}`, {
+            responseType: 'blob', // Quan trọng: không parse như JSON
+        });
+
+        // Lấy filename từ Content-Disposition header
+        const contentDisposition = response.headers['content-disposition'];
+        let filename = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+            if (filenameMatch) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        // Tạo blob và download
+        const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        return { success: true, filename };
+    } catch (error) {
+        console.error('Export Error:', error);
+        
+        // Nếu lỗi là blob (có thể là JSON error), thử parse
+        if (error.response && error.response.data instanceof Blob) {
+            try {
+                const text = await error.response.data.text();
+                const errorData = JSON.parse(text);
+                throw new Error(errorData.message || 'Lỗi khi xuất dữ liệu');
+            } catch (e) {
+                throw new Error('Lỗi khi xuất dữ liệu');
+            }
+        }
+        
+        throw error;
+    }
+};
+
 // Lấy danh sách store (dùng cho filter overview)
 export const fetchStores = () => {
     return apiClient.get(`/analytics/stores`);

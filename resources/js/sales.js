@@ -2,6 +2,7 @@ import Chart from 'chart.js/auto';
 import $ from 'jquery';
 import dayjs from 'dayjs';
 import axios from 'axios';
+import { downloadExportCSV } from './api.js';
 
 /* ======================================================= */
 /* GLOBAL CHART INSTANCES                                   */
@@ -480,11 +481,38 @@ function initModalEvents() {
 }
 
 /* ======================================================= */
+/* DOWNLOAD HANDLER                                          */
+/* ======================================================= */
+function initDownloadButton() {
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (!downloadBtn) return;
+
+    downloadBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const originalText = downloadBtn.innerHTML;
+        downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        downloadBtn.disabled = true;
+
+        try {
+            await downloadExportCSV('transactions');
+        } catch (error) {
+            console.error('Export Error:', error);
+            alert('Có lỗi khi xuất dữ liệu. Vui lòng thử lại.');
+        } finally {
+            downloadBtn.innerHTML = originalText;
+            downloadBtn.disabled = false;
+        }
+    });
+}
+
+/* ======================================================= */
 /* DOCUMENT READY                                           */
 /* ======================================================= */
 $(document).ready(function() {
     initFilters();
     initModalEvents();
+    initDownloadButton();
     fetchSalesData(); // Load data on page load
 });
 

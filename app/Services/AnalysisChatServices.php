@@ -31,8 +31,11 @@ class AnalysisChatServices
 
     public function analyzeAndRespond($userQuestion)
     {
-        // Lấy dữ liệu ngữ cảnh (đã được làm sạch ký tự lỗi)
-        $businessData = $this->getAllContextData();
+        // 1. Trích xuất thời gian từ câu hỏi
+        $timeContext = $this->extractTimeFromQuestion($userQuestion);
+
+        // 2. Lấy dữ liệu ngữ cảnh dựa trên thời gian đã trích xuất
+        $businessData = $this->getAllContextData($timeContext['month'], $timeContext['year']);
 
         // Xây dựng prompt chuẩn
         $fullPrompt = $this->buildPrompt($businessData, $userQuestion);
@@ -89,6 +92,32 @@ class AnalysisChatServices
             'message' => 'Tất cả các "bộ não" AI đều đang bận. Bạn vui lòng thử lại sau 30 giây.'
         ];
     }
+
+    //Hàm trích xuất thời gian từ câu hỏi   
+    private function extractTimeFromQuestion($question)
+    {
+        // 1. Lấy thời gian mặc định từ giao dịch mới nhất
+        $latestTransaction = DB::table('TRANSACTIONS')->latest('DATE')->first();
+        $year = $latestTransaction ? Carbon::parse($latestTransaction->DATE)->year : now()->year;
+        $month = $latestTransaction ? Carbon::parse($latestTransaction->DATE)->month : now()->month;
+
+        // 2. Tìm năm trong câu hỏi (Ví dụ: 2023, 2024)
+        if (preg_match('/\b(202[0-5]|201[0-9])\b/', $question, $matches)) {
+            $year = intval($matches[1]);
+        }
+
+        // 3. Tìm tháng trong câu hỏi (Ví dụ: tháng 5, thg 10)
+        if (preg_match('/tháng\s?([1-9]|1[0-2])\b/i', $question, $matches)) {
+            $month = intval($matches[1]);
+        }
+
+        // LUÔN TRẢ VỀ ĐỦ 2 KEY NÀY
+        return [
+            'month' => $month,
+            'year'  => $year
+        ];
+    }
+
     //Hàm gọi API Groq
     private function callGroqApi($modelName, $prompt)
     {
@@ -149,7 +178,7 @@ class AnalysisChatServices
         ";
     }
 
-    public function getAllContextData()
+    public function getAllContextData($targetMonth, $targetYear)
     {
         // Lấy mốc thời gian thực tế nhất
         $latestTransaction = DB::table('TRANSACTIONS')->latest('DATE')->first();

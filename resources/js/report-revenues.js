@@ -255,3 +255,137 @@ function renderTable(data) {
 }
 
 $(document).ready(initPage);
+
+
+function generateScaledCanvasDataUrl(originalCanvas, scale = 2) {
+    try {
+        const w = originalCanvas.width || originalCanvas.offsetWidth || 800;
+        const h = originalCanvas.height || originalCanvas.offsetHeight || 400;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(w * scale);
+        canvas.height = Math.round(h * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+        ctx.drawImage(originalCanvas, 0, 0, w, h);
+        return canvas.toDataURL('image/png');
+    } catch (e) {
+        try { return originalCanvas.toDataURL('image/png'); } catch (err) { return null; }
+    }
+}
+
+function proceedToPrintRevenue(clonedNode, printWindow) {
+    try {
+        const doc = printWindow.document;
+        const body = doc.body;
+        body.style.background = '#fff';
+        body.innerHTML = '';
+        body.appendChild(clonedNode);
+
+        const images = body.querySelectorAll('img');
+        let loaded = 0;
+        if (images.length === 0) {
+            printWindow.focus();
+            printWindow.print();
+            return;
+        }
+        images.forEach((img) => {
+            img.onload = img.onerror = () => {
+                loaded += 1;
+                if (loaded >= images.length) {
+                    printWindow.focus();
+                    printWindow.print();
+                }
+            };
+        });
+    } catch (e) {
+        console.error('Printing failed:', e);
+        printWindow.focus();
+        printWindow.print();
+    }
+}
+
+async function exportRevenueReport() {
+    try {
+        // choose main card to export
+        const container = document.querySelector('.card.section-card') || document.querySelector('section.container-fluid-dashboard');
+        if (!container) { alert('Không tìm thấy nội dung báo cáo để xuất.'); return; }
+
+        // Clone and clean empty parts
+        const clone = container.cloneNode(true);
+
+        // Remove summary items that have no data (e.g., '--' or empty)
+        const summaryEls = clone.querySelectorAll('.summary-value');
+        summaryEls.forEach(el => {
+            const text = (el.textContent || '').trim();
+            if (!text || text === '--' || text.toLowerCase().includes('n/a') || text.toLowerCase().includes('no data')) {
+                const card = el.closest('.summary-card') || el.parentNode;
+                if (card) card.parentNode.removeChild(card);
+            }
+        });
+
+        // For each canvas, try to generate a high-res image and replace; if no chart instance, remove the card
+        const canvases = clone.querySelectorAll('canvas');
+        for (const clonedCanvas of canvases) {
+            const id = clonedCanvas.id;
+            const original = document.getElementById(id);
+            const card = clonedCanvas.closest('.chart-card') || clonedCanvas.closest('.card') || clonedCanvas.parentNode;
+
+            if (!original) {
+// Remove if original not present / no data
+                if (card && card.parentNode) card.parentNode.removeChild(card);
+                else if (clonedCanvas.parentNode) clonedCanvas.parentNode.removeChild(clonedCanvas);
+                continue;
+            }
+
+            // Try to get data URL scaled for better print quality
+            const dataUrl = generateScaledCanvasDataUrl(original, 2) || original.toDataURL('image/png');
+            if (!dataUrl) {
+                if (card && card.parentNode) card.parentNode.removeChild(card);
+                else if (clonedCanvas.parentNode) clonedCanvas.parentNode.removeChild(clonedCanvas);
+                continue;
+            }
+
+            const img = document.createElement('img');
+            img.src = dataUrl;
+            img.style.display = 'block';
+            img.style.maxWidth = '100%';
+            img.style.margin = '0 auto';
+            clonedCanvas.parentNode.replaceChild(img, clonedCanvas);
+            // mark the card to avoid page-breaks and optionally force dedicated page for pie chart
+            if (card) card.classList.add('report-chart');
+            if (id === 'pieChart' && card) card.classList.add('report-page');
+        }
+
+        // Open print window
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) { alert('Allow popups to export PDF.'); return; }
+
+        const doc = printWindow.document;
+        doc.open();
+        const headHtml = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+            .map(n => n.outerHTML).join('\n');
+
+        const printStyles = `
+            <style>
+                @media print {
+                    .report-chart, canvas, img { page-break-inside: avoid; break-inside: avoid; -webkit-print-color-adjust: exact; }
+                    .report-page { page-break-before: always; page-break-after: always; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+                    .report-page .card { border: none !important; box-shadow: none !important; }
+                    img { width: 95% !important; max-width: 95% !important; height: auto !important; display: block; margin: 0 auto; }
+                    .card, .card-body { padding-left: 6px !important; padding-right: 6px !important; }
+                }
+            </style>
+        `;
+
+        doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>Revenue Report</title>${headHtml}${printStyles}</head><body></body></html>`);
+        doc.close();
+
+        proceedToPrintRevenue(clone, printWindow);
+
+    } catch (err) {
+        console.error('Export Revenue Report failed:', err);
+        alert('Không thể xuất báo cáo. Vui lòng thử lại.');
+    }
+}
+    // Expose for inline onclick fallback
+    window.exportRevenueReport = exportRevenueReport;
