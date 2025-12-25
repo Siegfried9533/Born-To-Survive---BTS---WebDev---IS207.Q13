@@ -1,6 +1,7 @@
 import Chart from 'chart.js/auto';
 import $ from 'jquery';
-import { fetchDashboardOverview } from './api.js';
+import dayjs from 'dayjs';
+import { fetchDashboardOverview, fetchStores } from './api.js';
 
 /* ======================================================= */
 /* BIẾN TOÀN CỤC LƯU TRỮ INSTANCE BIỂU ĐỒ (để destroy) */
@@ -10,9 +11,26 @@ let modalabChartInstance = null;
 let salesChartInstance = null;
 
 /* ======================================================= */
+/* LOADING OVERLAY HELPERS                                  */
+/* ======================================================= */
+function showLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.add('active');
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+}
+
+/* ======================================================= */
 /* OVERVIEW: GỌI API /api/dashboard/overview → VẼ BIỂU ĐỒ */
 /* ======================================================= */
-async function initOverviewChartsFromApi() {
+async function initOverviewChartsFromApi(filterParams = {}) {
     // Chỉ chạy nếu đang ở trang có biểu đồ này
     const canvas = document.getElementById("gmvEvolutionChart");
     if (!canvas) {
@@ -20,15 +38,20 @@ async function initOverviewChartsFromApi() {
         return;
     }
 
-    console.log("🚀 Calling API: /api/dashboard/overview");
+    const params = collectFilters();
+    console.log("🚀 Calling API: /api/dashboard/overview", params);
+
+    // Hiển thị loading overlay
+    showLoading();
 
     try {
         // Dùng axios thay vì jQuery để đảm bảo ổn định
-        const response = await fetchDashboardOverview();
+        const response = await fetchDashboardOverview(params);
         const data = response.data;
 
         if (!data) {
             console.error("❌ API trả về rỗng.");
+            hideLoading();
             return;
         }
 
@@ -56,6 +79,10 @@ async function initOverviewChartsFromApi() {
             console.warn("⚠️ Thiếu dữ liệu: Sales_Channels");
         }
 
+        if ($('#total-revenue').length) {
+            $('#total-revenue').text(`$${data.total_revenue.toLocaleString()}`);
+        }
+
     } catch (error) {
         console.error("❌ Lỗi khi gọi API:", error);
         if (error.response) {
@@ -63,16 +90,51 @@ async function initOverviewChartsFromApi() {
             console.error("Response data:", error.response.data);
         }
         alert("Không thể tải dữ liệu tổng quan. Vui lòng kiểm tra Console (F12).");
+    } finally {
+        // Ẩn loading overlay sau khi hoàn tất (dù thành công hay lỗi)
+        hideLoading();
     }
+}
+
+// Thu thập filter (1 ngày + stores)
+function collectFilters() {
+    const anchor = document.getElementById('startDate')?.value || null;
+    
+    // Kiểm tra "All stores" có được chọn không
+    const allStoresChecked = document.getElementById('store_all')?.checked;
+    
+    let stores = [];
+    if (!allStoresChecked) {
+        // Chỉ lấy stores cụ thể nếu không chọn "All stores"
+        const storeCheckboxes = document.querySelectorAll('#overview-store-dropdown input[type="checkbox"]:checked:not(#store_all)');
+        stores = Array.from(storeCheckboxes).map(c => c.value).filter(v => v !== "");
+    }
+    // Nếu allStoresChecked = true hoặc không có store nào được chọn → stores = [] → backend query tất cả
+
+    console.log("🔍 Filters collected:", { anchor, stores });
+    
+    return {
+        anchor: anchor,
+        stores: stores
+    };
 }
 
 // === 1. GMV Evolution (Line on top of Bar) ===
 function renderGMVEvolution(data) {
-    const ctx = document.getElementById("gmvEvolutionChart").getContext("2d");
+    const canvasId = "gmvEvolutionChart";
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext("2d");
 
-    // ⚠️ SỬA 2: Hủy biểu đồ cũ nếu tồn tại
+    // ⚠️ SỬA 2: Hủy biểu đồ cũ nếu tồn tại (kiểm tra cả biến và instance trên canvas)
+    const existingChart = Chart.getChart(canvasId);
+    if (existingChart) {
+        existingChart.destroy();
+    }
     if (gmvChartInstance) {
         gmvChartInstance.destroy();
+        gmvChartInstance = null;
     }
 
     // Helper xử lý dữ liệu an toàn
@@ -125,7 +187,7 @@ function renderGMVEvolution(data) {
                     callbacks: {
                         label: function (context) {
                             if (context.dataset.label === "GMV") {
-                                return `GMV: €${Number(context.parsed.y).toLocaleString('fr-FR')}`;
+                                return `GMV: $${Number(context.parsed.y).toLocaleString('fr-FR')}`;
                             } else {
                                 return `Growth: ${context.parsed.y}%`;
                             }
@@ -136,7 +198,7 @@ function renderGMVEvolution(data) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { callback: (v) => `€${(v / 1000).toFixed(0)}k` }, // Rút gọn số liệu trục Y
+                    ticks: { callback: (v) => `$${(v / 1000).toFixed(0)}k` }, // Rút gọn số liệu trục Y
                     grid: { color: "#e5e7eb" },
                 },
                 y1: {
@@ -155,23 +217,36 @@ function renderGMVEvolution(data) {
 
 // === 2. Modalab Synthesis ===
 function renderModalabSynthesis(data) {
-    const ctx = document.getElementById("modalabChart").getContext("2d");
+    const canvasId = "modalabChart";
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
 
+    const ctx = canvas.getContext("2d");
+
+    const existingChart = Chart.getChart(canvasId);
+    if (existingChart) {
+        existingChart.destroy();
+    }
     if (modalabChartInstance) {
         modalabChartInstance.destroy();
+        modalabChartInstance = null;
     }
 
     const labels = Array.isArray(data.labels) ? data.labels : String(data.labels || "").split(",");
     const values = Array.isArray(data.values) ? data.values.map(Number) : String(data.values || "").split(",").map(Number);
+    const gmvs   = data.gmv ? (Array.isArray(data.gmv) ? data.gmv.map(Number) : String(data.gmv || "").split(",").map(Number)) : [];
+
+    // Tính màu động: xanh nếu growth >= 0, đỏ nếu < 0
+    const backgroundColors = values.map(v => v >= 0 ? "#48bb78" : "#f56565");
 
     modalabChartInstance = new Chart(ctx, {
         type: "bar",
         data: {
             labels,
             datasets: [{
-                label: 'Synthesis', // Cần label cho tooltip
+                label: 'Growth %',
                 data: values,
-                backgroundColor: "#647acb",
+                backgroundColor: backgroundColors,
                 borderRadius: 6,
                 barThickness: 20,
             }],
@@ -184,14 +259,20 @@ function renderModalabSynthesis(data) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: (ctx) => `${ctx.raw}%`
+                        label: (ctx) => {
+                            const growth = ctx.raw;
+                            const gmvVal = gmvs[ctx.dataIndex] ?? null;
+                            const gmvText = gmvVal !== null ? ` | GMV: ${Number(gmvVal).toLocaleString('fr-FR')} $` : "";
+                            return `Growth: ${growth}%${gmvText}`;
+                        }
                     }
                 }
             },
             scales: {
                 x: {
-                    max: 100, // Phần trăm thì max là 100
+                    // Auto scale - không giới hạn max 100% vì SBY, SBM có thể > 100%
                     ticks: { callback: (v) => `${v}%` },
+                    grid: { color: "#e5e7eb" },
                 },
                 y: { grid: { display: false } },
             },
@@ -201,14 +282,24 @@ function renderModalabSynthesis(data) {
 
 // === 3. Sales Channels ===
 function renderSalesChannels(data) {
-    const ctx = document.getElementById("salesChannelsChart").getContext("2d");
+    const canvasId = "salesChannelsChart";
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
 
+    const ctx = canvas.getContext("2d");
+
+    const existingChart = Chart.getChart(canvasId);
+    if (existingChart) {
+        existingChart.destroy();
+    }
     if (salesChartInstance) {
         salesChartInstance.destroy();
+        salesChartInstance = null;
     }
 
     const labels = Array.isArray(data.labels) ? data.labels : String(data.labels || "").split(",");
     const values = Array.isArray(data.values) ? data.values.map(Number) : String(data.values || "").split(",").map(Number);
+    const gmvs   = data.gmv ? (Array.isArray(data.gmv) ? data.gmv.map(Number) : String(data.gmv || "").split(",").map(Number)) : [];
     // Màu mặc định nếu API không gửi màu
     const defaultColors = ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"];
     const colors = data.colors ? (Array.isArray(data.colors) ? data.colors : data.colors.split(",")) : defaultColors;
@@ -244,7 +335,9 @@ function renderSalesChannels(data) {
                             const value = context.parsed;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = ((value / total) * 100).toFixed(1);
-                            return `${context.label}: ${percentage}% (${value})`;
+                            const gmvVal = gmvs[context.dataIndex] ?? null;
+                            const gmvText = gmvVal !== null ? ` | GMV: ${Number(gmvVal).toLocaleString('fr-FR')} $` : "";
+                            return `${context.label}: ${percentage}%${gmvText}`;
                         },
                     },
                 },
@@ -257,7 +350,158 @@ function renderSalesChannels(data) {
 Chart.defaults.font.family = "'Inter', 'Helvetica', 'Arial', sans-serif";
 Chart.defaults.color = "#495057";
 
-/* GỌI KHI LOAD TRANG */
+// 2. Lắng nghe sự kiện từ bộ lọc (Nút Apply)
+$(document).on('click', '#apply-filter-btn', function (e) {
+    e.preventDefault();
+    
+    // Lấy giá trị từ các ô Input trong file filter.blade.php
+    // Đảm bảo các ô này có ID tương ứng là #date-from và #date-to
+    const from = $('#date-from').val(); 
+    const to = $('#date-to').val();
+
+    // Gọi lại hàm để fetch dữ liệu mới
+    initOverviewChartsFromApi({ from, to });
+});
+
+// 3. Khởi chạy lần đầu (không có param -> hiện toàn bộ thời gian)
 $(document).ready(function () {
+    initFilters();
     initOverviewChartsFromApi();
 });
+
+function initFilters() {
+    // Litepicker chọn 1 ngày (single mode)
+    const pickerA = new Litepicker({
+        element: document.getElementById('startDateDisplay'),
+        singleMode: true,
+        numberOfMonths: 2,
+        numberOfColumns: 2,
+        format: "YYYY-MM-DD",
+        setup: (picker) => {
+            picker.on('selected', (date1) => {
+                const val = date1.format('YYYY-MM-DD');
+                document.getElementById('startDate').value = val;
+                document.getElementById('endDate').value   = val;
+                document.getElementById('startDateDisplay').value = val;
+                document.getElementById('endDateDisplay').value   = dayjs(val).subtract(1, 'year').format('YYYY-MM-DD');
+                // Không tự động load - chờ user ấn Apply Filters
+            });
+        }
+    });
+
+    // Nút calendar trigger
+    const triggerBtn = document.getElementById('calendarTriggerBtn');
+    if (triggerBtn) {
+        triggerBtn.addEventListener('click', () => pickerA.show());
+    }
+
+    // Auto set default: 18/03/2025
+    const today = dayjs('2025-03-18');
+    const todayStr = today.format('YYYY-MM-DD');
+    
+    // Set giá trị cho hidden inputs và display inputs
+    document.getElementById('startDate').value = todayStr;
+    document.getElementById('endDate').value = todayStr;
+    document.getElementById('startDateDisplay').value = todayStr;
+    document.getElementById('endDateDisplay').value = today.subtract(1, 'year').format('YYYY-MM-DD');
+    
+    // Set date cho picker (không trigger event)
+    pickerA.setDate(today.toDate());
+
+    // Load stores vào dropdown checkbox
+    fetchStores().then(resp => {
+        // API trả về { status: 'success', data: [...stores] }
+        const stores = resp.data?.data || resp.data || [];
+        console.log("📦 Stores loaded:", stores);
+        
+        const dropdown = document.getElementById('overview-store-dropdown');
+        if (!dropdown) return;
+        
+        // Giữ option All stores (checked mặc định)
+        dropdown.innerHTML = `
+            <div class="filter-item">
+                <input type="checkbox" id="store_all" value="" checked>
+                <label for="store_all">All stores</label>
+            </div>
+        `;
+        
+        stores.forEach((s, idx) => {
+            const id = `store_${idx + 1}`;
+            const value = s.StoreID || s.store_id || s.id;
+            const label = s.StoreName || s.Name || `Store ${value}`;
+            const div = document.createElement('div');
+            div.className = 'filter-item';
+            div.innerHTML = `
+                <input type="checkbox" id="${id}" value="${value}">
+                <label for="${id}">${label}</label>
+            `;
+            dropdown.appendChild(div);
+        });
+
+        // bật/tắt dropdown - toggle class 'open' trên parent .filter-group
+        const filterGroup = document.getElementById('overview-store-group');
+        const displayBox = document.querySelector('#overview-store-group .filter-display-box');
+        const displayText = document.querySelector('#overview-store-group .filter-display-text');
+        
+        if (displayBox && filterGroup) {
+            displayBox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                filterGroup.classList.toggle('open');
+            });
+        }
+        
+        document.addEventListener('click', (e) => {
+            if (filterGroup && !filterGroup.contains(e.target)) {
+                filterGroup.classList.remove('open');
+            }
+        });
+
+        // Logic: Khi chọn "All stores", bỏ chọn các store khác và ngược lại
+        const storeAllCheckbox = document.getElementById('store_all');
+        const storeCheckboxes = () => dropdown.querySelectorAll('input[type="checkbox"]:not(#store_all)');
+        
+        storeAllCheckbox?.addEventListener('change', () => {
+            if (storeAllCheckbox.checked) {
+                storeCheckboxes().forEach(cb => cb.checked = false);
+            }
+        });
+        
+        dropdown.addEventListener('change', (e) => {
+            if (e.target.id !== 'store_all' && e.target.checked) {
+                // Nếu chọn store cụ thể, bỏ "All stores"
+                if (storeAllCheckbox) storeAllCheckbox.checked = false;
+            }
+            // Nếu không còn store nào được chọn, tự động chọn lại "All stores"
+            const anyChecked = Array.from(storeCheckboxes()).some(cb => cb.checked);
+            if (!anyChecked && storeAllCheckbox) {
+                storeAllCheckbox.checked = true;
+            }
+        });
+
+        // cập nhật text khi chọn
+        const updateText = () => {
+            const allChecked = storeAllCheckbox?.checked;
+            if (allChecked) {
+                displayText.textContent = 'All stores';
+                return;
+            }
+            const checked = Array.from(storeCheckboxes()).filter(c => c.checked);
+            const names = checked.map(c => c.nextElementSibling?.textContent?.trim() || '').filter(Boolean);
+            displayText.textContent = names.length ? names.join(', ') : 'All stores';
+        };
+        
+        dropdown.addEventListener('change', updateText);
+        updateText();
+        
+    }).catch(err => {
+        console.warn("❌ Không tải được stores", err);
+    });
+
+    const applyBtn = document.getElementById('applyOverviewFilters');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            initOverviewChartsFromApi();
+        });
+    }
+}

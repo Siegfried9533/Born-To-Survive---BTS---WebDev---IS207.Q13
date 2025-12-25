@@ -2,47 +2,61 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * Sử dụng bảng ACCOUNT trong SQL Server
+     */
+    protected $table = 'ACCOUNT';
+
+    /**
+     * Primary key
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * Column names mapping (SQL Server dùng PascalCase)
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'Username',
+        'Email',
+        'Password',
+        'EmployeeID',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Hidden attributes
      */
     protected $hidden = [
-        'password',
+        'Password',
         'remember_token',
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Disable timestamps vì bảng ACCOUNT không có created_at/updated_at
      */
-    protected function casts(): array
+    public $timestamps = false;
+
+    /**
+     * Override: Laravel mặc định tìm cột 'password', ta dùng 'Password'
+     */
+    public function getAuthPassword()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->Password;
+    }
+
+    /**
+     * Relationship: User belongs to an Employee
+     */
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class, 'EmployeeID', 'EmployeeID');
     }
 }

@@ -24,7 +24,7 @@
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end mt-2 shadow-sm">
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="../pages/profile.html">
+                        <a class="dropdown-item d-flex align-items-center" href="/profile">
                             <i class="fa-solid fa-user me-2"></i>
                             <span>My Profile</span>
                         </a>
@@ -33,7 +33,7 @@
                         <hr class="dropdown-divider">
                     </li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center text-danger" href="#">
+                        <a class="dropdown-item d-flex align-items-center text-danger" href="#" id="btnLogout">
                             <i class="fa-solid fa-arrow-right-from-bracket me-2"></i>
                             <span>Log Out</span>
                         </a>
@@ -48,11 +48,12 @@
             <button type="button" class="date-icon-btn" id="calendarTriggerBtn">
                 <i class="fa-solid fa-calendar-days date-icon"></i>
             </button>
-            <input type="text" class="date-input" id="startDateDisplay" readonly>
+            {{-- <input type="text" class="date-input" id="startDateDisplay" readonly> --}}
+            <input type="date" id="startDate" value="2024-01-12">
             <span class="date-separator fw-bold text-dark">To</span>
-            <input type="text" class="date-input" id="endDateDisplay" readonly>
-            <input type="hidden" id="startDate" value="25-07-2030">
-            <input type="hidden" id="endDate" value="29-07-2030">
+            <input type="date" id="endDate" value="2025-01-01">            <button type="button" class="btn btn-sm btn-primary ms-2 rounded-pill px-3" id="btnApplyHeaderDate">
+                Apply
+            </button>            {{-- <input type="text" class="date-input" id="endDateDisplay" readonly> --}}
         </div>
     </div>
 

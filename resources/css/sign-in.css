@@ -219,7 +219,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 500px;
+    height: max-height;
 }
 
 /* Lớp sóng tĩnh thứ nhất */

@@ -6,8 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Customers;
-use App\Models\Invoices;
-use App\Models\InvoiceLines;
 
 class CustomersController extends Controller
 {
@@ -18,22 +16,18 @@ class CustomersController extends Controller
     {
         // 1. Query dữ liệu và tính toán
         $query = Customers::query() 
-            ->select("customers.CusID", "customers.Name", "customers.Phone", "customers.Email")
+            ->select("customers.CustomerID", "customers.Name", "customers.Email", "customers.Telephone", "customers.City", "customers.Country")
 
             //Dùng withSum có điều kiện
             //SELECT customers.*, 
-                //SUM(invoice_lines.Quantity * invoice_lines.UnitPrice - invoice_lines.Discount) AS total_spent
-            ///FROM customers
-                //LEFT JOIN invoices ON customers.CusID = invoices.CusID
-                //LEFT JOIN invoice_lines ON invoices.InvoiceID = invoice_lines.InvoiceID
-            //GROUP BY customers.CusID
+                //SUM(LineTotal) AS total_spent
+            //FROM customers
+                //LEFT JOIN transactions ON customers.CustomerID = transactions.CustomerID
+            //GROUP BY customers.CustomerID
             //ORDER BY total_spent DESC;
             
-            ->withSum(["invoices as total_spent" => function($q){
-                // LƯU Ý: Tên bảng trong DB của bạn là 'invoice_lines'
-                $q->join("invoice_lines", "invoices.InvoiceID", "=", "invoice_lines.InvoiceID")
-                  // Công thức: (Số lượng * Đơn giá) - Giảm giá
-                  ->select(DB::raw("SUM((invoice_lines.Quantity * invoice_lines.UnitPrice) - invoice_lines.Discount)"));
+            ->withSum(["transactions as total_spent" => function($q){
+                $q->select(DB::raw("COALESCE(SUM(COALESCE(transactions.LineTotal, transactions.Quantity * transactions.UnitPrice)),0)"));
             }], 'total_spent')
 
             ->orderByDesc('total_spent');
@@ -63,10 +57,12 @@ class CustomersController extends Controller
             }
 
             return [
-                'CusID' => $customer->CusID,
+                'CustomerID' => $customer->CustomerID,
                 'Name' => $customer->Name,
-                'Phone' => $customer->Phone,
+                'Telephone' => $customer->Telephone,
                 'Email' => $customer->Email,
+                'City' => $customer->City,
+                'Country' => $customer->Country,
                 'total_spent' => $money, // Giữ số nguyên để JS tính toán nếu cần
                 'formatted_spent' => number_format($money) . ' VND',
                 'rank' => $rank
@@ -104,14 +100,13 @@ class CustomersController extends Controller
         }
 
         // Tìm kiếm đa năng (Tên OR SĐT OR Email OR ID)
-                // Dùng đúng model Customers (đã được import ở đầu file)
-                $customers = Customers::query()
-            ->select('CusID', 'Name', 'Phone', 'Email') // Chỉ lấy cột cần thiết
+        $customers = Customers::query()
+            ->select('CustomerID', 'Name', 'Telephone', 'Email', 'City', 'Country') // Chỉ lấy cột cần thiết
             ->where(function($q) use ($keyword) {
                 $q->where('Name', 'LIKE', "%{$keyword}%")
-                  ->orWhere('Phone', 'LIKE', "%{$keyword}%")
+                  ->orWhere('Telephone', 'LIKE', "%{$keyword}%")
                   ->orWhere('Email', 'LIKE', "%{$keyword}%")
-                  ->orWhere('CusID', 'LIKE', "%{$keyword}%");
+                  ->orWhere('CustomerID', 'LIKE', "%{$keyword}%");
             })
             ->limit(20) // Giới hạn 20 kết quả
             ->get();

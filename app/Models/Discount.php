@@ -12,27 +12,26 @@ class Discount extends Model
     protected $table = 'discounts';
 
     protected $primaryKey = 'DiscountID';
-    public $incrementing = false;
-    protected $keyType = 'string';
+    public $incrementing = true; // FIXED: DiscountID is auto-increment in migration
+    protected $keyType = 'int';
     protected $fillable = [
-        'DiscountID',
-        'Name',
+        'Discount',
+        'Start',
+        'End',
         'Description',
-        'DiscountRate', // Tỷ lệ giảm (VD: 0.1)
         'Category',
         'SubCategory',
-        'StartDate',
-        'EndDate',
     ];
 
     protected $casts = [
-        'DiscountRate' => 'float',
-        'StartDate' => 'datetime', // Tự động chuyển thành đối tượng Carbon (xử lý ngày tháng)
-        'EndDate' => 'datetime',
+        'Discount' => 'float',
+        'Start' => 'datetime',
+        'End' => 'datetime',
     ];
-    
-    public function invoiceLines()
+
+    // Relationship: Một Discount có nhiều Transactions
+    public function transactions()
     {
-        return $this->hasMany(InvoiceLine::class, 'DiscountID', 'DiscountID');
+        return $this->hasMany(Transaction::class, 'DiscountID', 'DiscountID');
     }
 }
