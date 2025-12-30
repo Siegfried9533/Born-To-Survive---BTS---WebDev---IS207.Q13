@@ -25,105 +25,91 @@
 -   `config/` — cấu hình ứng dụng
 -   `vendor/` — dependencies do Composer quản lý
 
-#### Hướng dẫn cài đặt & chạy (Windows + Bash, phù hợp với Laragon hoặc môi trường PHP-FPM):
+#### Link Repository:
 
-1. Chuẩn bị môi trường
+[\[LINK_REPOSITORY_HERE\]](https://github.com/Siegfried9533/Born-To-Survive---BTS---WebDev---IS207.Q13.git)
 
--   Cài đặt PHP >= 8.0, Composer, Node.js và npm (hoặc Yarn). Sử dụng Laragon trên Windows là một lựa chọn thuận tiện.
+#### Hướng dẫn cài đặt & chạy (Chi tiết):
 
-2. Sao chép file môi trường và chỉnh `APP_KEY`
+Dự án cung cấp các script tự động để khởi chạy nhanh chóng.
 
-```bash
-cd "D:/laragon/www/fashion-business-data-analysis-dashboard/Born-To-Survive---BTS---WebDev---IS207.Q13"
-cp .env.example .env
-composer install --no-interaction --prefer-dist
-npm install
-```
+**Cách 1: Chạy nhanh với Script (Khuyến nghị)**
 
-3. Tạo APP KEY
+-   **Windows (CMD):** Chạy file `START_ALL.bat`
+-   **Windows (PowerShell):** Chạy `.\START_ALL.ps1` (cần quyền admin hoặc set execution policy)
+-   **Linux/Mac:** Chạy `./START_ALL.sh`
 
-```bash
-php artisan key:generate
-```
+Script này sẽ tự động:
+1. Cài đặt dependencies (NPM, Composer).
+2. Tạo file `.env` và generate key.
+3. Khởi chạy server Laravel và Vite.
 
-4. Cấu hình cơ sở dữ liệu
+**Cách 2: Cài đặt thủ công**
 
--   Mở `./.env` và chỉnh các biến kết nối DB (`DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).
--   Ví dụ dùng MySQL (Laragon mặc định cung cấp):
+1.  **Chuẩn bị môi trường:**
+    -   PHP >= 8.2
+    -   Composer
+    -   Node.js & NPM
+    -   MySQL (hoặc SQLite)
 
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=your_database
-DB_USERNAME=root
-DB_PASSWORD=
-```
+2.  **Cài đặt Dependencies:**
+    ```bash
+    composer install
+    npm install
+    ```
 
-5. Chạy migration và seed (nếu có)
+3.  **Cấu hình môi trường:**
+    -   Copy file `.env.example` thành `.env`:
+        ```bash
+        cp .env.example .env
+        ```
+    -   Generate App Key:
+        ```bash
+        php artisan key:generate
+        ```
+    -   Cấu hình thông tin Database trong file `.env`:
+        ```env
+        DB_CONNECTION=mysql
+        DB_HOST=127.0.0.1
+        DB_PORT=3306
+        DB_DATABASE=ten_database_cua_ban
+        DB_USERNAME=root
+        DB_PASSWORD=
+        ```
 
-```bash
-php artisan migrate --seed
-```
+4.  **Cài đặt Cơ sở dữ liệu:**
+    -   Chạy migration để tạo bảng và seed dữ liệu mẫu (Rất quan trọng để có dữ liệu ban đầu):
+        ```bash
+        php artisan migrate --seed
+        ```
+    -   Tạo symbolic link cho storage (nếu cần):
+        ```bash
+        php artisan storage:link
+        ```
 
-6. Tạo symbolic link cho storage (nếu sử dụng upload file)
+5.  **Khởi chạy ứng dụng:**
+    -   Terminal 1 (Laravel Server):
+        ```bash
+        php artisan serve
+        ```
+    -   Terminal 2 (Vite Assets):
+        ```bash
+        npm run dev
+        ```
 
-```bash
-php artisan storage:link
-```
-
-7. Chạy môi trường phát triển (dev)
-
--   Mở một terminal để chạy Vite (build assets và hot-reload):
-
-```bash
-npm run dev
-```
-
--   Mở terminal khác để chạy server PHP (hoặc dùng Laragon để host):
-
-```bash
-php artisan serve --host=127.0.0.1 --port=8000
-```
-
--   Truy cập ứng dụng tại: `http://127.0.0.1:8000`
-
-Ghi chú: Nếu bạn dùng Laragon, có thể cấu hình host và dùng Apache/Nginx cài sẵn, sau đó trỏ DocumentRoot tới `public/` của project.
+6.  **Truy cập:**
+    -   Mở trình duyệt tại: `http://127.0.0.1:8000`
 
 #### Các lệnh hữu ích khác
 
--   Cài dependencies Composer:
-
-```bash
-composer install
-```
-
--   Build assets cho production:
-
-```bash
-npm run build
-```
-
--   Chạy migration:
-
-```bash
-php artisan migrate
-```
-
--   Gỡ cache cấu hình / route / view (nếu cần):
-
-```bash
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-php artisan cache:clear
-```
-
-#### Thông tin quan trọng và mẹo
-
--   Kiểm tra file `.env` trước khi chạy migrations để tránh mất dữ liệu trên DB sai.
--   Nếu bạn gặp lỗi quyền (permission) trên `storage/` hoặc `bootstrap/cache/`, hãy cấp quyền ghi cho user PHP.
--   Nếu cần khôi phục dữ liệu mẫu, kiểm tra `database/fake-data/` và `database/seeders/`.
+-   **Build production:** `npm run build`
+-   **Clear cache:**
+    ```bash
+    php artisan config:clear
+    php artisan route:clear
+    php artisan view:clear
+    php artisan cache:clear
+    ```
 
 ---
 
